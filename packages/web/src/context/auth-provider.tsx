@@ -97,7 +97,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setState({
         isAuthenticated: true,
-        user: response.user,
+        user: {
+          ...response.user,
+          permissions: [], // Default empty permissions array
+        },
         tokens: null, // Simplified for now
         isLoading: false,
         error: null,

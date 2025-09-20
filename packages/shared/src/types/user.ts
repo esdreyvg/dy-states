@@ -8,6 +8,9 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   preferences: UserPreferences;
+  permissions: string[];
+  emailVerified: boolean;
+  lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +18,7 @@ export interface User {
 export enum UserRole {
   ADMIN = 'admin',
   AGENT = 'agent',
+  OWNER = 'owner',
   CLIENT = 'client',
   INVESTOR = 'investor',
 }
