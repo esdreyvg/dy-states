@@ -1,0 +1,31 @@
+export declare const NODE_ENV: string;
+export declare const IS_DEVELOPMENT: boolean;
+export declare const IS_PRODUCTION: boolean;
+export declare const APP_NAME = "Inmobiliaria Dyxersoft";
+export declare const APP_VERSION = "1.0.0";
+export declare const APP_DESCRIPTION = "Plataforma inmobiliaria moderna para Bolivia";
+export declare const SUPPORTED_LANGUAGES: readonly ["es", "en"];
+export declare const DEFAULT_LANGUAGE = "es";
+export declare const SUPPORTED_CURRENCIES: readonly ["DOP", "USD"];
+export declare const DEFAULT_CURRENCY = "DOP";
+export declare const SUPPORTED_COUNTRIES: readonly ["DO"];
+export declare const DEFAULT_COUNTRY = "DO";
+export declare const DOMINICAN_PROVINCES: readonly ["Azua", "Baoruco", "Barahona", "Dajabón", "Distrito Nacional", "Duarte", "El Seibo", "Elías Piña", "Espaillat", "Hato Mayor", "Hermanas Mirabal", "Independencia", "La Altagracia", "La Romana", "La Vega", "María Trinidad Sánchez", "Monseñor Nouel", "Monte Cristi", "Monte Plata", "Pedernales", "Peravia", "Puerto Plata", "Samaná", "San Cristóbal", "San José de Ocoa", "San Juan", "San Pedro de Macorís", "Sánchez Ramírez", "Santiago", "Santiago Rodríguez", "Santo Domingo", "Valverde"];
+export declare const MAJOR_CITIES: readonly ["Santo Domingo", "Santiago de los Caballeros", "La Romana", "San Pedro de Macorís", "Puerto Plata", "La Vega", "Barahona", "Moca", "San Cristóbal", "Higüey", "Azua", "Bonao", "Cotuí", "Nagua", "Mao", "Baní", "San Juan de la Maguana", "Monte Cristi", "Samaná", "Constanza"];
+export declare const MAX_FILE_SIZE: number;
+export declare const ALLOWED_IMAGE_TYPES: string[];
+export declare const ALLOWED_DOCUMENT_TYPES: string[];
+export declare const DEFAULT_PAGE_SIZE = 20;
+export declare const MAX_PAGE_SIZE = 100;
+export declare const CACHE_DURATION: {
+    SHORT: number;
+    MEDIUM: number;
+    LONG: number;
+    VERY_LONG: number;
+};
+export declare const URL_PATTERNS: {
+    readonly EMAIL: RegExp;
+    readonly PHONE_DO: RegExp;
+    readonly CEDULA_DO: RegExp;
+    readonly RNC_DO: RegExp;
+};

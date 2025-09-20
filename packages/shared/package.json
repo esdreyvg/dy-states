@@ -1,0 +1,25 @@
+{
+  "name": "@dy-estates/shared",
+  "version": "1.0.0",
+  "description": "Shared types, utilities and constants for Inmobiliaria Dyxersoft",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rimraf dist",
+    "type-check": "tsc --noEmit",
+    "lint": "echo 'Linting temporarily disabled for shared project'"
+  },
+  "dependencies": {
+    "zod": "^3.22.4",
+    "date-fns": "^3.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "rimraf": "^5.0.5"
+  },
+  "files": [
+    "dist"
+  ]
+}

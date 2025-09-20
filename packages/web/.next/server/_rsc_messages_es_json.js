@@ -1,0 +1,25 @@
+"use strict";
+/*
+ * ATTENTION: An "eval-source-map" devtool has been used.
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file with attached SourceMaps in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+exports.id = "_rsc_messages_es_json";
+exports.ids = ["_rsc_messages_es_json"];
+exports.modules = {
+
+/***/ "(rsc)/./messages/es.json":
+/*!**************************!*\
+  !*** ./messages/es.json ***!
+  \**************************/
+/***/ ((module) => {
+
+module.exports = /*#__PURE__*/JSON.parse('{"Home":{"title":"Inmobiliaria Dyxersoft","subtitle":"La plataforma inmobiliaria más moderna de Bolivia. Encuentra tu hogar ideal o invierte en las mejores propiedades.","exploreProperties":"Explorar Propiedades","login":"Iniciar Sesión","features":{"title":"¿Por qué elegir Inmobiliaria Dyxersoft?","properties":{"title":"Propiedades Verificadas","description":"Todas nuestras propiedades son verificadas y cuentan con documentación legal completa."},"location":{"title":"Ubicaciones Premium","description":"Propiedades en las mejores zonas de Bolivia con mapas interactivos."},"agents":{"title":"Agentes Expertos","description":"Nuestro equipo de agentes inmobiliarios te acompañará en todo el proceso."},"investment":{"title":"Inversión Segura","description":"Análisis de mercado y proyecciones de rentabilidad para inversores."}},"cta":{"title":"¿Listo para encontrar tu próxima propiedad?","description":"Únete a miles de usuarios que ya encontraron su hogar ideal con Inmobiliaria Dyxersoft.","button":"Comenzar Ahora"}},"Auth":{"login":{"title":"Iniciar Sesión","subtitle":"Accede a tu cuenta de Inmobiliaria Dyxersoft","email":"Correo electrónico","password":"Contraseña","rememberMe":"Recordarme","forgotPassword":"¿Olvidaste tu contraseña?","loginButton":"Iniciar Sesión","noAccount":"¿No tienes cuenta?","signUp":"Registrarse"},"register":{"title":"Crear Cuenta","subtitle":"Únete a Inmobiliaria Dyxersoft","firstName":"Nombre","lastName":"Apellido","email":"Correo electrónico","password":"Contraseña","confirmPassword":"Confirmar Contraseña","acceptTerms":"Acepto los términos y condiciones","registerButton":"Crear Cuenta","hasAccount":"¿Ya tienes cuenta?","signIn":"Iniciar Sesión"}},"Navigation":{"home":"Inicio","properties":"Propiedades","agents":"Agentes","about":"Acerca de","contact":"Contacto","dashboard":"Dashboard","profile":"Perfil","settings":"Configuración","logout":"Cerrar Sesión"},"Common":{"search":"Buscar","filter":"Filtrar","sort":"Ordenar","save":"Guardar","cancel":"Cancelar","delete":"Eliminar","edit":"Editar","view":"Ver","loading":"Cargando...","error":"Error","success":"Éxito","noResults":"No se encontraron resultados","pageNotFound":"Página no encontrada"}}');
+
+/***/ })
+
+};
+;
