@@ -27,6 +27,12 @@ import {
   ReviewType,
   ReviewStatus,
   ReportReason,
+  AdminRole,
+  AdminUserStatus,
+  PropertyPublicationStatus,
+  PermissionType,
+  ActivityType,
+  LogLevel,
 } from '../types/rental';
 
 // Configuración de mensajes de error en español
@@ -1286,5 +1292,363 @@ export type RatingCriteriaInput = z.infer<typeof ratingCriteriaSchema>;
 
 export type ModerationActionInput = z.infer<typeof moderationActionSchema>;
 export type ModerationSettingsInput = z.infer<typeof moderationSettingsSchema>;
+
+// =============================================================================
+// ESQUEMAS DE VALIDACIÓN PARA ADMINISTRACIÓN Y CMS
+// =============================================================================
+
+// Esquema para permiso
+export const permissionSchema = z.object({
+  type: z.nativeEnum(PermissionType, {
+    errorMap: () => ({ message: 'Tipo de permiso inválido' })
+  }),
+  name: z.string()
+    .min(3, 'Nombre del permiso debe tener al menos 3 caracteres')
+    .max(100, 'Nombre del permiso no puede exceder 100 caracteres'),
+  description: z.string()
+    .min(10, 'Descripción debe tener al menos 10 caracteres')
+    .max(500, 'Descripción no puede exceder 500 caracteres'),
+  resource: z.string()
+    .min(1, 'Recurso requerido')
+    .optional(),
+  scope: z.enum(['global', 'own', 'department'], {
+    errorMap: () => ({ message: 'Alcance del permiso inválido' })
+  }).optional()
+});
+
+// Esquema para rol
+export const roleSchema = z.object({
+  name: z.string()
+    .min(3, 'Nombre del rol debe tener al menos 3 caracteres')
+    .max(50, 'Nombre del rol no puede exceder 50 caracteres')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Nombre del rol solo puede contener letras, números, guiones y guiones bajos'),
+  displayName: z.string()
+    .min(3, 'Nombre para mostrar debe tener al menos 3 caracteres')
+    .max(100, 'Nombre para mostrar no puede exceder 100 caracteres'),
+  description: z.string()
+    .min(10, 'Descripción debe tener al menos 10 caracteres')
+    .max(500, 'Descripción no puede exceder 500 caracteres'),
+  level: z.number()
+    .min(1, 'Nivel mínimo es 1')
+    .max(10, 'Nivel máximo es 10'),
+  permissions: z.array(z.string().min(1, 'ID de permiso inválido'))
+    .min(1, 'Debe asignar al menos un permiso'),
+  isActive: z.boolean().default(true)
+});
+
+// Esquema para usuario administrativo
+export const adminUserSchema = z.object({
+  username: z.string()
+    .min(3, 'Nombre de usuario debe tener al menos 3 caracteres')
+    .max(30, 'Nombre de usuario no puede exceder 30 caracteres')
+    .regex(/^[a-zA-Z0-9_.-]+$/, 'Nombre de usuario solo puede contener letras, números, puntos, guiones y guiones bajos'),
+  email: z.string()
+    .email('Email inválido')
+    .max(254, 'Email no puede exceder 254 caracteres'),
+  firstName: z.string()
+    .min(2, 'Nombre debe tener al menos 2 caracteres')
+    .max(50, 'Nombre no puede exceder 50 caracteres'),
+  lastName: z.string()
+    .min(2, 'Apellido debe tener al menos 2 caracteres')
+    .max(50, 'Apellido no puede exceder 50 caracteres'),
+  avatar: z.string().url('URL del avatar inválida').optional(),
+  roles: z.array(z.string().min(1, 'ID de rol inválido'))
+    .min(1, 'Debe asignar al menos un rol'),
+  status: z.nativeEnum(AdminUserStatus, {
+    errorMap: () => ({ message: 'Estado de usuario inválido' })
+  }).default(AdminUserStatus.PENDING_ACTIVATION),
+  preferences: z.object({
+    language: z.string().min(2, 'Código de idioma inválido').default('es'),
+    timezone: z.string().min(3, 'Zona horaria inválida').default('America/Santo_Domingo'),
+    theme: z.enum(['light', 'dark', 'auto'], {
+      errorMap: () => ({ message: 'Tema inválido' })
+    }).default('light'),
+    notificationsEnabled: z.boolean().default(true),
+    emailNotifications: z.boolean().default(true)
+  }),
+  department: z.string()
+    .min(2, 'Departamento debe tener al menos 2 caracteres')
+    .max(100, 'Departamento no puede exceder 100 caracteres')
+    .optional(),
+  position: z.string()
+    .min(2, 'Posición debe tener al menos 2 caracteres')
+    .max(100, 'Posición no puede exceder 100 caracteres')
+    .optional(),
+  phone: z.string()
+    .min(10, 'Teléfono debe tener al menos 10 dígitos')
+    .max(15, 'Teléfono no puede exceder 15 dígitos')
+    .regex(/^[\+]?[1-9][\d]{0,15}$/, 'Formato de teléfono inválido')
+    .optional()
+});
+
+// Esquema para actualizar usuario administrativo
+export const updateAdminUserSchema = adminUserSchema.partial().extend({
+  suspensionReason: z.string()
+    .min(10, 'Motivo de suspensión debe tener al menos 10 caracteres')
+    .max(500, 'Motivo de suspensión no puede exceder 500 caracteres')
+    .optional()
+});
+
+// Esquema para gestión de propiedades
+export const propertyManagementSchema = z.object({
+  title: z.string()
+    .min(10, 'Título debe tener al menos 10 caracteres')
+    .max(200, 'Título no puede exceder 200 caracteres'),
+  description: z.string()
+    .min(50, 'Descripción debe tener al menos 50 caracteres')
+    .max(2000, 'Descripción no puede exceder 2000 caracteres'),
+  status: z.nativeEnum(PropertyPublicationStatus, {
+    errorMap: () => ({ message: 'Estado de propiedad inválido' })
+  }),
+  reviewNotes: z.string()
+    .max(1000, 'Notas de revisión no pueden exceder 1000 caracteres')
+    .optional(),
+  rejectionReason: z.string()
+    .min(10, 'Motivo de rechazo debe tener al menos 10 caracteres')
+    .max(500, 'Motivo de rechazo no puede exceder 500 caracteres')
+    .optional(),
+  priority: z.number()
+    .min(1, 'Prioridad mínima es 1')
+    .max(10, 'Prioridad máxima es 10')
+    .default(5),
+  tags: z.array(z.string().min(1, 'Tag inválido'))
+    .max(10, 'Máximo 10 tags')
+    .optional(),
+  categories: z.array(z.string().min(1, 'Categoría inválida'))
+    .max(5, 'Máximo 5 categorías')
+    .optional(),
+  featuredUntil: z.date().optional()
+});
+
+// Esquema para log de actividad
+export const activityLogSchema = z.object({
+  activityType: z.nativeEnum(ActivityType, {
+    errorMap: () => ({ message: 'Tipo de actividad inválido' })
+  }),
+  description: z.string()
+    .min(5, 'Descripción debe tener al menos 5 caracteres')
+    .max(500, 'Descripción no puede exceder 500 caracteres'),
+  resourceType: z.string()
+    .min(1, 'Tipo de recurso requerido')
+    .optional(),
+  resourceId: z.string()
+    .min(1, 'ID de recurso requerido')
+    .optional(),
+  resourceName: z.string()
+    .min(1, 'Nombre de recurso requerido')
+    .optional(),
+  metadata: z.record(z.unknown()).optional(),
+  level: z.nativeEnum(LogLevel, {
+    errorMap: () => ({ message: 'Nivel de log inválido' })
+  }).default(LogLevel.INFO),
+  success: z.boolean().default(true),
+  errorMessage: z.string()
+    .max(1000, 'Mensaje de error no puede exceder 1000 caracteres')
+    .optional(),
+  duration: z.number()
+    .min(0, 'Duración debe ser positiva')
+    .optional()
+});
+
+// Esquema para configuración del sistema
+export const systemConfigSchema = z.object({
+  category: z.string()
+    .min(2, 'Categoría debe tener al menos 2 caracteres')
+    .max(50, 'Categoría no puede exceder 50 caracteres'),
+  key: z.string()
+    .min(2, 'Clave debe tener al menos 2 caracteres')
+    .max(100, 'Clave no puede exceder 100 caracteres')
+    .regex(/^[a-zA-Z0-9_.-]+$/, 'Clave solo puede contener letras, números, puntos, guiones y guiones bajos'),
+  value: z.union([z.string(), z.number(), z.boolean(), z.object({}).passthrough()]),
+  type: z.enum(['string', 'number', 'boolean', 'json', 'array'], {
+    errorMap: () => ({ message: 'Tipo de configuración inválido' })
+  }),
+  description: z.string()
+    .min(10, 'Descripción debe tener al menos 10 caracteres')
+    .max(500, 'Descripción no puede exceder 500 caracteres'),
+  isPublic: z.boolean().default(false),
+  isEditable: z.boolean().default(true),
+  validation: z.object({
+    required: z.boolean().optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    pattern: z.string().optional(),
+    options: z.array(z.string()).optional()
+  }).optional()
+});
+
+// Esquema para notificación administrativa
+export const adminNotificationSchema = z.object({
+  type: z.enum(['info', 'warning', 'error', 'success'], {
+    errorMap: () => ({ message: 'Tipo de notificación inválido' })
+  }),
+  title: z.string()
+    .min(5, 'Título debe tener al menos 5 caracteres')
+    .max(100, 'Título no puede exceder 100 caracteres'),
+  message: z.string()
+    .min(10, 'Mensaje debe tener al menos 10 caracteres')
+    .max(500, 'Mensaje no puede exceder 500 caracteres'),
+  actionUrl: z.string().url('URL de acción inválida').optional(),
+  actionText: z.string()
+    .min(2, 'Texto de acción debe tener al menos 2 caracteres')
+    .max(50, 'Texto de acción no puede exceder 50 caracteres')
+    .optional(),
+  recipientRole: z.nativeEnum(AdminRole).optional(),
+  recipientUser: z.string().min(1, 'ID de usuario inválido').optional(),
+  isGlobal: z.boolean().default(false),
+  priority: z.enum(['low', 'medium', 'high', 'urgent'], {
+    errorMap: () => ({ message: 'Prioridad inválida' })
+  }).default('medium'),
+  expiresAt: z.date().optional(),
+  metadata: z.record(z.unknown()).optional()
+});
+
+// Esquema para reporte del sistema
+export const systemReportSchema = z.object({
+  name: z.string()
+    .min(5, 'Nombre del reporte debe tener al menos 5 caracteres')
+    .max(100, 'Nombre del reporte no puede exceder 100 caracteres'),
+  description: z.string()
+    .min(10, 'Descripción debe tener al menos 10 caracteres')
+    .max(500, 'Descripción no puede exceder 500 caracteres'),
+  type: z.enum(['users', 'properties', 'bookings', 'financial', 'activity', 'custom'], {
+    errorMap: () => ({ message: 'Tipo de reporte inválido' })
+  }),
+  parameters: z.record(z.unknown()).optional(),
+  filters: z.record(z.unknown()).optional(),
+  dateRange: z.object({
+    start: z.date({ errorMap: () => ({ message: 'Fecha de inicio inválida' }) }),
+    end: z.date({ errorMap: () => ({ message: 'Fecha de fin inválida' }) })
+  }),
+  format: z.enum(['json', 'csv', 'xlsx', 'pdf'], {
+    errorMap: () => ({ message: 'Formato de reporte inválido' })
+  }).default('xlsx'),
+  scheduledRun: z.object({
+    frequency: z.enum(['daily', 'weekly', 'monthly'], {
+      errorMap: () => ({ message: 'Frecuencia inválida' })
+    }),
+    isActive: z.boolean().default(true)
+  }).optional()
+});
+
+// Esquema para widget del dashboard
+export const dashboardWidgetSchema = z.object({
+  type: z.enum(['metric', 'chart', 'table', 'list', 'map'], {
+    errorMap: () => ({ message: 'Tipo de widget inválido' })
+  }),
+  title: z.string()
+    .min(3, 'Título debe tener al menos 3 caracteres')
+    .max(100, 'Título no puede exceder 100 caracteres'),
+  description: z.string()
+    .max(500, 'Descripción no puede exceder 500 caracteres')
+    .optional(),
+  size: z.enum(['small', 'medium', 'large', 'full'], {
+    errorMap: () => ({ message: 'Tamaño de widget inválido' })
+  }).default('medium'),
+  position: z.object({
+    x: z.number().min(0, 'Posición X debe ser positiva'),
+    y: z.number().min(0, 'Posición Y debe ser positiva'),
+    width: z.number().min(1, 'Ancho mínimo es 1'),
+    height: z.number().min(1, 'Alto mínimo es 1')
+  }),
+  config: z.record(z.unknown()),
+  dataSource: z.string()
+    .min(1, 'Fuente de datos requerida'),
+  refreshInterval: z.number()
+    .min(30, 'Intervalo mínimo de actualización es 30 segundos')
+    .max(3600, 'Intervalo máximo de actualización es 1 hora')
+    .optional(),
+  permissions: z.array(z.nativeEnum(PermissionType))
+    .min(1, 'Debe asignar al menos un permiso'),
+  isActive: z.boolean().default(true)
+});
+
+// Esquema para configuración del dashboard
+export const dashboardConfigSchema = z.object({
+  name: z.string()
+    .min(3, 'Nombre del dashboard debe tener al menos 3 caracteres')
+    .max(100, 'Nombre del dashboard no puede exceder 100 caracteres'),
+  isDefault: z.boolean().default(false),
+  userId: z.string().min(1, 'ID de usuario inválido').optional(),
+  role: z.nativeEnum(AdminRole).optional(),
+  widgets: z.array(dashboardWidgetSchema),
+  layout: z.enum(['grid', 'flexible'], {
+    errorMap: () => ({ message: 'Tipo de layout inválido' })
+  }).default('grid'),
+  theme: z.enum(['light', 'dark'], {
+    errorMap: () => ({ message: 'Tema inválido' })
+  }).default('light'),
+  autoRefresh: z.boolean().default(true),
+  refreshInterval: z.number()
+    .min(60, 'Intervalo mínimo de actualización es 60 segundos')
+    .max(3600, 'Intervalo máximo de actualización es 1 hora')
+    .default(300)
+});
+
+// Esquema para filtros de reportes
+export const reportFiltersSchema = z.object({
+  dateRange: z.object({
+    start: z.date(),
+    end: z.date()
+  }).optional(),
+  userType: z.array(z.nativeEnum(UserType)).optional(),
+  propertyType: z.array(z.string()).optional(),
+  location: z.object({
+    country: z.string().optional(),
+    state: z.string().optional(),
+    city: z.string().optional()
+  }).optional(),
+  status: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  minValue: z.number().min(0, 'Valor mínimo debe ser positivo').optional(),
+  maxValue: z.number().min(0, 'Valor máximo debe ser positivo').optional(),
+  sortBy: z.string().min(1, 'Campo de ordenamiento requerido').optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  limit: z.number().min(1).max(10000).default(1000),
+  offset: z.number().min(0).default(0)
+});
+
+// Esquemas agrupados para administración
+export const adminSchemas = {
+  // Usuarios y roles
+  permission: permissionSchema,
+  role: roleSchema,
+  adminUser: adminUserSchema,
+  updateAdminUser: updateAdminUserSchema,
+  
+  // Gestión de propiedades
+  propertyManagement: propertyManagementSchema,
+  
+  // Logs y auditoría
+  activityLog: activityLogSchema,
+  
+  // Configuración
+  systemConfig: systemConfigSchema,
+  
+  // Notificaciones
+  adminNotification: adminNotificationSchema,
+  
+  // Reportes
+  systemReport: systemReportSchema,
+  reportFilters: reportFiltersSchema,
+  
+  // Dashboard
+  dashboardWidget: dashboardWidgetSchema,
+  dashboardConfig: dashboardConfigSchema
+};
+
+// Tipos inferidos para administración
+export type PermissionInput = z.infer<typeof permissionSchema>;
+export type RoleInput = z.infer<typeof roleSchema>;
+export type AdminUserInput = z.infer<typeof adminUserSchema>;
+export type UpdateAdminUserInput = z.infer<typeof updateAdminUserSchema>;
+export type PropertyManagementInput = z.infer<typeof propertyManagementSchema>;
+export type ActivityLogInput = z.infer<typeof activityLogSchema>;
+export type SystemConfigInput = z.infer<typeof systemConfigSchema>;
+export type AdminNotificationInput = z.infer<typeof adminNotificationSchema>;
+export type SystemReportInput = z.infer<typeof systemReportSchema>;
+export type DashboardWidgetInput = z.infer<typeof dashboardWidgetSchema>;
+export type DashboardConfigInput = z.infer<typeof dashboardConfigSchema>;
+export type ReportFiltersInput = z.infer<typeof reportFiltersSchema>;
 
 export default rentalSchemas;

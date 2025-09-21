@@ -1647,3 +1647,456 @@ export interface AlertSettings {
     severityLevel: 'low' | 'medium' | 'high';
   }[];
 }
+
+// =============================================================================
+// TIPOS PARA ADMINISTRACIÓN Y CMS
+// =============================================================================
+
+// Roles de administración
+export enum AdminRole {
+  SUPER_ADMIN = 'super_admin',
+  ADMIN = 'admin',
+  MODERATOR = 'moderator',
+  EDITOR = 'editor',
+  VIEWER = 'viewer',
+  PROPERTY_MANAGER = 'property_manager',
+  USER_MANAGER = 'user_manager',
+  CONTENT_MANAGER = 'content_manager',
+  REPORT_VIEWER = 'report_viewer'
+}
+
+// Estado de usuario administrativo
+export enum AdminUserStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  SUSPENDED = 'suspended',
+  PENDING_ACTIVATION = 'pending_activation'
+}
+
+// Estados de propiedades en el CMS
+export enum PropertyPublicationStatus {
+  DRAFT = 'draft',
+  PENDING_REVIEW = 'pending_review',
+  APPROVED = 'approved',
+  PUBLISHED = 'published',
+  REJECTED = 'rejected',
+  SUSPENDED = 'suspended',
+  ARCHIVED = 'archived'
+}
+
+// Tipos de permisos del sistema
+export enum PermissionType {
+  // Gestión de usuarios
+  USER_VIEW = 'user_view',
+  USER_CREATE = 'user_create',
+  USER_EDIT = 'user_edit',
+  USER_DELETE = 'user_delete',
+  USER_SUSPEND = 'user_suspend',
+  
+  // Gestión de propiedades
+  PROPERTY_VIEW = 'property_view',
+  PROPERTY_CREATE = 'property_create',
+  PROPERTY_EDIT = 'property_edit',
+  PROPERTY_DELETE = 'property_delete',
+  PROPERTY_APPROVE = 'property_approve',
+  PROPERTY_PUBLISH = 'property_publish',
+  PROPERTY_SUSPEND = 'property_suspend',
+  
+  // Gestión de contenido
+  CONTENT_VIEW = 'content_view',
+  CONTENT_CREATE = 'content_create',
+  CONTENT_EDIT = 'content_edit',
+  CONTENT_DELETE = 'content_delete',
+  CONTENT_PUBLISH = 'content_publish',
+  
+  // Reportes y análisis
+  REPORTS_VIEW = 'reports_view',
+  REPORTS_EXPORT = 'reports_export',
+  ANALYTICS_VIEW = 'analytics_view',
+  
+  // Configuración del sistema
+  SYSTEM_CONFIG = 'system_config',
+  ROLE_MANAGE = 'role_manage',
+  PERMISSION_MANAGE = 'permission_manage',
+  
+  // Moderación
+  MODERATION_VIEW = 'moderation_view',
+  MODERATION_ACTION = 'moderation_action',
+  
+  // Logs y auditoría
+  AUDIT_VIEW = 'audit_view',
+  LOGS_VIEW = 'logs_view'
+}
+
+// Tipos de actividad del sistema
+export enum ActivityType {
+  USER_LOGIN = 'user_login',
+  USER_LOGOUT = 'user_logout',
+  USER_CREATED = 'user_created',
+  USER_UPDATED = 'user_updated',
+  USER_DELETED = 'user_deleted',
+  USER_SUSPENDED = 'user_suspended',
+  
+  PROPERTY_CREATED = 'property_created',
+  PROPERTY_UPDATED = 'property_updated',
+  PROPERTY_DELETED = 'property_deleted',
+  PROPERTY_APPROVED = 'property_approved',
+  PROPERTY_REJECTED = 'property_rejected',
+  PROPERTY_PUBLISHED = 'property_published',
+  PROPERTY_SUSPENDED = 'property_suspended',
+  
+  REVIEW_CREATED = 'review_created',
+  REVIEW_MODERATED = 'review_moderated',
+  REVIEW_DELETED = 'review_deleted',
+  
+  BOOKING_CREATED = 'booking_created',
+  BOOKING_CANCELLED = 'booking_cancelled',
+  BOOKING_CONFIRMED = 'booking_confirmed',
+  
+  SYSTEM_CONFIG_CHANGED = 'system_config_changed',
+  ROLE_ASSIGNED = 'role_assigned',
+  PERMISSION_GRANTED = 'permission_granted',
+  
+  DATA_EXPORTED = 'data_exported',
+  REPORT_GENERATED = 'report_generated'
+}
+
+// Niveles de severidad para logs
+export enum LogLevel {
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
+  CRITICAL = 'critical'
+}
+
+// Permiso individual
+export interface Permission {
+  id: string;
+  type: PermissionType;
+  name: string;
+  description: string;
+  resource?: string; // recurso específico al que aplica
+  scope?: 'global' | 'own' | 'department'; // alcance del permiso
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Rol administrativo
+export interface Role {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string;
+  level: number; // nivel jerárquico (1 = más alto)
+  permissions: Permission[];
+  isSystemRole: boolean; // roles del sistema no se pueden eliminar
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
+
+// Usuario administrativo
+export interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatar?: string;
+  roles: Role[];
+  status: AdminUserStatus;
+  lastLogin?: Date;
+  loginCount: number;
+  preferences: {
+    language: string;
+    timezone: string;
+    theme: 'light' | 'dark' | 'auto';
+    notificationsEnabled: boolean;
+    emailNotifications: boolean;
+  };
+  department?: string;
+  position?: string;
+  phone?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy?: string;
+  suspendedAt?: Date;
+  suspendedBy?: string;
+  suspensionReason?: string;
+}
+
+// Sesión administrativa
+export interface AdminSession {
+  id: string;
+  userId: string;
+  ipAddress: string;
+  userAgent: string;
+  startTime: Date;
+  lastActivity: Date;
+  isActive: boolean;
+  permissions: PermissionType[];
+  expiresAt: Date;
+}
+
+// Gestión de propiedades en CMS
+export interface PropertyManagement {
+  id: string;
+  propertyId: string;
+  title: string;
+  description: string;
+  ownerId: string;
+  ownerName: string;
+  status: PropertyPublicationStatus;
+  publishedAt?: Date;
+  unpublishedAt?: Date;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  reviewNotes?: string;
+  rejectionReason?: string;
+  views: number;
+  inquiries: number;
+  bookings: number;
+  revenue: number;
+  rating: number;
+  reviewCount: number;
+  featuredUntil?: Date;
+  priority: number;
+  tags: string[];
+  categories: string[];
+  location: {
+    country: string;
+    state: string;
+    city: string;
+    neighborhood?: string;
+  };
+  pricing: {
+    basePrice: number;
+    currency: string;
+    priceType: 'per_night' | 'per_month' | 'per_year';
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  lastModifiedBy: string;
+}
+
+// Log de actividad del sistema
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  activityType: ActivityType;
+  description: string;
+  resourceType?: string; // 'user', 'property', 'booking', etc.
+  resourceId?: string;
+  resourceName?: string;
+  metadata?: Record<string, unknown>; // datos adicionales
+  ipAddress: string;
+  userAgent: string;
+  sessionId?: string;
+  level: LogLevel;
+  timestamp: Date;
+  success: boolean;
+  errorMessage?: string;
+  duration?: number; // tiempo en ms
+}
+
+// Métricas de la plataforma
+export interface PlatformMetrics {
+  timestamp: Date;
+  
+  // Métricas de usuarios
+  users: {
+    total: number;
+    active: number;
+    new: number;
+    suspended: number;
+    byType: Record<UserType, number>;
+    byCountry: Record<string, number>;
+  };
+  
+  // Métricas de propiedades
+  properties: {
+    total: number;
+    published: number;
+    pending: number;
+    draft: number;
+    byType: Record<PropertyType, number>;
+    byLocation: Record<string, number>;
+    averagePrice: number;
+    totalValue: number;
+  };
+  
+  // Métricas de reservas
+  bookings: {
+    total: number;
+    confirmed: number;
+    pending: number;
+    cancelled: number;
+    totalRevenue: number;
+    averageValue: number;
+    occupancyRate: number;
+  };
+  
+  // Métricas de reseñas
+  reviews: {
+    total: number;
+    pending: number;
+    approved: number;
+    averageRating: number;
+    byRating: Record<number, number>;
+  };
+  
+  // Métricas de tráfico
+  traffic: {
+    pageViews: number;
+    uniqueVisitors: number;
+    sessions: number;
+    averageSessionDuration: number;
+    bounceRate: number;
+    topPages: Array<{ page: string; views: number }>;
+  };
+  
+  // Métricas financieras
+  financial: {
+    totalRevenue: number;
+    commissions: number;
+    refunds: number;
+    pendingPayments: number;
+    monthlyRecurring: number;
+  };
+}
+
+// Configuración del sistema
+export interface SystemConfiguration {
+  id: string;
+  category: string;
+  key: string;
+  value: string | number | boolean | object;
+  type: 'string' | 'number' | 'boolean' | 'json' | 'array';
+  description: string;
+  isPublic: boolean; // si se puede acceder desde el frontend
+  isEditable: boolean; // si se puede modificar desde el CMS
+  validation?: {
+    required?: boolean;
+    min?: number;
+    max?: number;
+    pattern?: string;
+    options?: string[];
+  };
+  updatedAt: Date;
+  updatedBy: string;
+}
+
+// Notificación administrativa
+export interface AdminNotification {
+  id: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  title: string;
+  message: string;
+  actionUrl?: string;
+  actionText?: string;
+  recipientRole?: AdminRole;
+  recipientUser?: string;
+  isRead: boolean;
+  isGlobal: boolean; // notificación para todos los admins
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  expiresAt?: Date;
+  createdAt: Date;
+  readAt?: Date;
+  metadata?: Record<string, unknown>;
+}
+
+// Reporte del sistema
+export interface SystemReport {
+  id: string;
+  name: string;
+  description: string;
+  type: 'users' | 'properties' | 'bookings' | 'financial' | 'activity' | 'custom';
+  parameters: Record<string, unknown>;
+  filters: Record<string, unknown>;
+  dateRange: {
+    start: Date;
+    end: Date;
+  };
+  generatedBy: string;
+  generatedAt: Date;
+  format: 'json' | 'csv' | 'xlsx' | 'pdf';
+  status: 'generating' | 'completed' | 'failed';
+  fileUrl?: string;
+  fileSize?: number;
+  recordCount?: number;
+  executionTime?: number;
+  error?: string;
+  scheduledRun?: {
+    frequency: 'daily' | 'weekly' | 'monthly';
+    nextRun: Date;
+    isActive: boolean;
+  };
+}
+
+// Dashboard widget
+export interface DashboardWidget {
+  id: string;
+  type: 'metric' | 'chart' | 'table' | 'list' | 'map';
+  title: string;
+  description?: string;
+  size: 'small' | 'medium' | 'large' | 'full';
+  position: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  config: Record<string, unknown>;
+  dataSource: string;
+  refreshInterval?: number; // segundos
+  permissions: PermissionType[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Configuración del dashboard
+export interface DashboardConfig {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  userId?: string; // si es personal
+  role?: AdminRole; // si es para un rol específico
+  widgets: DashboardWidget[];
+  layout: 'grid' | 'flexible';
+  theme: 'light' | 'dark';
+  autoRefresh: boolean;
+  refreshInterval: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Backup del sistema
+export interface SystemBackup {
+  id: string;
+  name: string;
+  description?: string;
+  type: 'full' | 'incremental' | 'database' | 'files';
+  status: 'running' | 'completed' | 'failed' | 'scheduled';
+  size?: number;
+  startTime: Date;
+  endTime?: Date;
+  duration?: number;
+  fileCount?: number;
+  location: string;
+  checksum?: string;
+  isEncrypted: boolean;
+  isCompressed: boolean;
+  retention: number; // días
+  createdBy: string;
+  error?: string;
+  restorePoints?: Array<{
+    id: string;
+    timestamp: Date;
+    description: string;
+  }>;
+}
