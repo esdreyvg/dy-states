@@ -1,11 +1,11 @@
 {
   "Home": {
-    "title": "Inmobiliaria Dyxersoft",
-    "subtitle": "The most modern Sistema de Gestion Inmobiliaria in the Dominican Republic. Find your ideal home or invest in the best properties.",
+    "title": "States Dyxersoft",
+    "subtitle": "The most modern Sistema de Gestion States in the Dominican Republic. Find your ideal home or invest in the best properties.",
     "exploreProperties": "Explore Properties",
     "login": "Sign In",
     "features": {
-      "title": "Why choose Inmobiliaria Dyxersoft?",
+      "title": "Why choose States Dyxersoft?",
       "properties": {
         "title": "Verified Properties",
         "description": "All our properties are verified and have complete legal documentation."
@@ -25,14 +25,14 @@
     },
     "cta": {
       "title": "Ready to find your next property?",
-      "description": "Join thousands of users who have already found their ideal home with Inmobiliaria Dyxersoft.",
+      "description": "Join thousands of users who have already found their ideal home with States Dyxersoft.",
       "button": "Get Started"
     }
   },
   "Auth": {
     "login": {
       "title": "Sign In",
-      "subtitle": "Access your Inmobiliaria Dyxersoft account",
+      "subtitle": "Access your States Dyxersoft account",
       "email": "Email",
       "password": "Password",
       "rememberMe": "Remember me",
@@ -43,7 +43,7 @@
     },
     "register": {
       "title": "Create Account",
-      "subtitle": "Join Inmobiliaria Dyxersoft",
+      "subtitle": "Join States Dyxersoft",
       "firstName": "First Name",
       "lastName": "Last Name",
       "email": "Email",
