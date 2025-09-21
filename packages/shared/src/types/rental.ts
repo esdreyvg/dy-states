@@ -861,3 +861,355 @@ export interface WebhookEvent {
   retryCount?: number;
   errors?: string[];
 }
+
+// =====================================================
+// TIPOS PARA VALORACIÓN Y ANÁLISIS DE MERCADO
+// =====================================================
+
+// Enum para tipos de propiedad
+export enum PropertyType {
+  APARTMENT = 'apartment',
+  HOUSE = 'house',
+  VILLA = 'villa',
+  STUDIO = 'studio',
+  LOFT = 'loft',
+  TOWNHOUSE = 'townhouse',
+  BUNGALOW = 'bungalow',
+  CABIN = 'cabin',
+  COTTAGE = 'cottage',
+  PENTHOUSE = 'penthouse',
+  ROOM = 'room',
+  SHARED_ROOM = 'shared_room',
+  HOSTEL = 'hostel',
+  HOTEL = 'hotel',
+  RESORT = 'resort',
+  CAMPING = 'camping'
+}
+
+// Estadísticas de precios por ubicación
+export interface LocationPriceStats {
+  id: string;
+  locationName: string;
+  city: string;
+  state: string;
+  country: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  averagePrice: number;
+  medianPrice: number;
+  minPrice: number;
+  maxPrice: number;
+  pricePerSquareMeter: number;
+  totalListings: number;
+  occupancyRate: number;
+  averageRating: number;
+  lastUpdated: Date;
+}
+
+// Estadísticas por tipo de propiedad
+export interface PropertyTypePriceStats {
+  propertyType: PropertyType;
+  averagePrice: number;
+  medianPrice: number;
+  priceRange: {
+    min: number;
+    max: number;
+    quartile25: number;
+    quartile75: number;
+  };
+  averageSize: number;
+  totalListings: number;
+  popularAmenities: string[];
+  seasonalTrends: SeasonalTrend[];
+  lastUpdated: Date;
+}
+
+// Tendencias estacionales
+export interface SeasonalTrend {
+  month: number;
+  year: number;
+  averagePrice: number;
+  occupancyRate: number;
+  demandLevel: 'low' | 'medium' | 'high' | 'peak';
+}
+
+// Datos para gráficas de mercado
+export interface MarketChartData {
+  period: string; // '2024-01', '2024-Q1', etc.
+  averagePrice: number;
+  listings: number;
+  occupancyRate: number;
+  revenue: number;
+  bookings: number;
+}
+
+// Comparación de propiedades
+export interface PropertyComparison {
+  id: string;
+  targetProperty: PropertyForComparison;
+  similarProperties: PropertyForComparison[];
+  comparisonMetrics: ComparisonMetrics;
+  marketPosition: MarketPosition;
+  recommendations: ValuationRecommendation[];
+  generatedAt: Date;
+}
+
+export interface PropertyForComparison {
+  id: string;
+  title: string;
+  propertyType: PropertyType;
+  location: {
+    address: string;
+    city: string;
+    coordinates: {
+      latitude: number;
+      longitude: number;
+    };
+    distanceFromTarget?: number; // en km
+  };
+  specifications: {
+    bedrooms: number;
+    bathrooms: number;
+    squareMeters: number;
+    maxGuests: number;
+  };
+  amenities: string[];
+  pricing: {
+    currentPrice: number;
+    averagePrice: number;
+    pricePerSquareMeter: number;
+  };
+  performance: {
+    rating: number;
+    reviewCount: number;
+    occupancyRate: number;
+    responseRate: number;
+  };
+  images: string[];
+  lastUpdated: Date;
+}
+
+export interface ComparisonMetrics {
+  priceCompetitiveness: number; // 0-100 score
+  amenityScore: number;
+  locationScore: number;
+  qualityScore: number;
+  overallScore: number;
+  priceRecommendation: {
+    recommended: number;
+    current: number;
+    difference: number;
+    percentageDifference: number;
+  };
+}
+
+export interface MarketPosition {
+  percentile: number; // 0-100
+  category: 'budget' | 'standard' | 'premium' | 'luxury';
+  competitorAnalysis: {
+    betterPriced: number;
+    similarPriced: number;
+    overpriced: number;
+  };
+}
+
+// Valoración automática de propiedades
+export interface PropertyValuation {
+  id: string;
+  propertyData: PropertyValuationInput;
+  estimatedValue: ValuationResult;
+  confidenceLevel: number; // 0-100
+  factors: ValuationFactor[];
+  comparableProperties: PropertyForComparison[];
+  marketContext: MarketContext;
+  generatedAt: Date;
+  validUntil: Date;
+}
+
+export interface PropertyValuationInput {
+  location: {
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+  };
+  propertyType: PropertyType;
+  specifications: {
+    bedrooms: number;
+    bathrooms: number;
+    squareMeters: number;
+    maxGuests: number;
+    yearBuilt?: number;
+    renovationYear?: number;
+  };
+  amenities: string[];
+  features: {
+    hasPool: boolean;
+    hasGarden: boolean;
+    hasParking: boolean;
+    hasAirConditioning: boolean;
+    hasHeating: boolean;
+    hasWifi: boolean;
+    hasKitchen: boolean;
+    petFriendly: boolean;
+    smokingAllowed: boolean;
+  };
+  condition: 'excellent' | 'good' | 'fair' | 'needs_renovation';
+  images?: string[];
+}
+
+export interface ValuationResult {
+  recommendedPrice: number;
+  priceRange: {
+    min: number;
+    max: number;
+  };
+  pricePerSquareMeter: number;
+  monthlyRevenuePotential: {
+    conservative: number;
+    optimistic: number;
+    realistic: number;
+  };
+  roi: {
+    annual: number;
+    monthly: number;
+  };
+}
+
+export interface ValuationFactor {
+  factor: string;
+  impact: 'positive' | 'negative' | 'neutral';
+  weight: number; // 0-100
+  description: string;
+  adjustment: number; // precio en €
+}
+
+export interface MarketContext {
+  localMarketTrend: 'rising' | 'stable' | 'declining';
+  seasonality: 'high' | 'medium' | 'low';
+  competitionLevel: 'low' | 'medium' | 'high';
+  demandSupplyRatio: number;
+  averageMarketPrice: number;
+  marketGrowth: number; // % anual
+}
+
+export interface ValuationRecommendation {
+  type: 'pricing' | 'amenity' | 'marketing' | 'improvement';
+  priority: 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  expectedImpact: string;
+  estimatedCost?: number;
+  timeframe: string;
+}
+
+// Reportes de mercado
+export interface MarketReport {
+  id: string;
+  title: string;
+  type: 'location' | 'property_type' | 'comparison' | 'valuation' | 'comprehensive';
+  parameters: ReportParameters;
+  data: MarketReportData;
+  charts: ChartConfiguration[];
+  summary: ReportSummary;
+  recommendations: ValuationRecommendation[];
+  generatedAt: Date;
+  generatedBy: string;
+  format: 'pdf' | 'csv' | 'excel' | 'json';
+}
+
+export interface ReportParameters {
+  dateRange: {
+    start: Date;
+    end: Date;
+  };
+  locations?: string[];
+  propertyTypes?: PropertyType[];
+  priceRange?: {
+    min: number;
+    max: number;
+  };
+  includeComparisons: boolean;
+  includeForecasts: boolean;
+  includeRecommendations: boolean;
+}
+
+export interface MarketReportData {
+  overview: {
+    totalProperties: number;
+    averagePrice: number;
+    totalRevenue: number;
+    occupancyRate: number;
+  };
+  trends: MarketChartData[];
+  statistics: {
+    byLocation: LocationPriceStats[];
+    byPropertyType: PropertyTypePriceStats[];
+  };
+  comparisons?: PropertyComparison[];
+  forecasts?: MarketForecast[];
+}
+
+export interface ChartConfiguration {
+  id: string;
+  title: string;
+  type: 'line' | 'bar' | 'pie' | 'area' | 'scatter' | 'heatmap';
+  data: any[];
+  config: {
+    xAxis?: string;
+    yAxis?: string;
+    groupBy?: string;
+    colors?: string[];
+    showLegend: boolean;
+    showGrid: boolean;
+  };
+}
+
+export interface ReportSummary {
+  keyFindings: string[];
+  marketInsights: string[];
+  opportunities: string[];
+  risks: string[];
+  conclusion: string;
+}
+
+export interface MarketForecast {
+  period: string;
+  metric: 'price' | 'demand' | 'supply' | 'occupancy';
+  predicted: number;
+  confidence: number;
+  factors: string[];
+}
+
+// DTOs para APIs de valoración
+export interface CreateValuationDTO {
+  propertyData: PropertyValuationInput;
+  includeComparisons: boolean;
+  includeRecommendations: boolean;
+}
+
+export interface CreateReportDTO {
+  title: string;
+  type: MarketReport['type'];
+  parameters: ReportParameters;
+  format: MarketReport['format'];
+}
+
+export interface MarketAnalysisDTO {
+  location?: {
+    city: string;
+    radius: number; // km
+  };
+  propertyType?: PropertyType;
+  dateRange: {
+    start: Date;
+    end: Date;
+  };
+  metrics: ('price' | 'occupancy' | 'revenue' | 'demand')[];
+}

@@ -705,4 +705,200 @@ export const rentalSchemas = {
   dateRange: dateRangeSchema,
 };
 
+// =====================================================
+// ESQUEMAS PARA VALORACIÓN Y ANÁLISIS DE MERCADO
+// =====================================================
+
+// Importar PropertyType para los esquemas
+import { PropertyType } from '../types/rental';
+
+// Esquema para solicitar análisis de mercado
+export const marketAnalysisSchema = z.object({
+  location: z.object({
+    city: z.string().min(1, 'Ciudad requerida'),
+    radius: z.number().min(1, 'Radio debe ser mayor a 0').max(100, 'Radio máximo 100km')
+  }).optional(),
+  propertyType: z.nativeEnum(PropertyType, {
+    errorMap: () => ({ message: 'Tipo de propiedad inválido' })
+  }).optional(),
+  dateRange: z.object({
+    start: z.string().refine(val => !isNaN(Date.parse(val)), 'Fecha de inicio inválida'),
+    end: z.string().refine(val => !isNaN(Date.parse(val)), 'Fecha de fin inválida')
+  }).refine(data => new Date(data.start) < new Date(data.end), 'La fecha de inicio debe ser anterior a la fecha de fin'),
+  metrics: z.array(z.enum(['price', 'occupancy', 'revenue', 'demand'])).min(1, 'Selecciona al menos una métrica')
+});
+
+// Esquema para datos de valoración de propiedad
+export const propertyValuationInputSchema = z.object({
+  location: z.object({
+    address: z.string().min(5, 'Dirección debe tener al menos 5 caracteres'),
+    city: z.string().min(2, 'Ciudad requerida'),
+    state: z.string().min(2, 'Estado/Provincia requerido'),
+    country: z.string().min(2, 'País requerido'),
+    coordinates: z.object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180)
+    }).optional()
+  }),
+  propertyType: z.nativeEnum(PropertyType, {
+    errorMap: () => ({ message: 'Tipo de propiedad inválido' })
+  }),
+  specifications: z.object({
+    bedrooms: z.number().min(0, 'Número de dormitorios inválido').max(20, 'Máximo 20 dormitorios'),
+    bathrooms: z.number().min(0, 'Número de baños inválido').max(20, 'Máximo 20 baños'),
+    squareMeters: z.number().min(10, 'Mínimo 10 metros cuadrados').max(10000, 'Máximo 10,000 metros cuadrados'),
+    maxGuests: z.number().min(1, 'Mínimo 1 huésped').max(50, 'Máximo 50 huéspedes'),
+    yearBuilt: z.number().min(1800, 'Año de construcción inválido').max(new Date().getFullYear(), 'Año de construcción no puede ser futuro').optional(),
+    renovationYear: z.number().min(1800, 'Año de renovación inválido').max(new Date().getFullYear(), 'Año de renovación no puede ser futuro').optional()
+  }),
+  amenities: z.array(z.string()).min(0, 'Lista de amenidades inválida'),
+  features: z.object({
+    hasPool: z.boolean(),
+    hasGarden: z.boolean(),
+    hasParking: z.boolean(),
+    hasAirConditioning: z.boolean(),
+    hasHeating: z.boolean(),
+    hasWifi: z.boolean(),
+    hasKitchen: z.boolean(),
+    petFriendly: z.boolean(),
+    smokingAllowed: z.boolean()
+  }),
+  condition: z.enum(['excellent', 'good', 'fair', 'needs_renovation'], {
+    errorMap: () => ({ message: 'Condición de propiedad inválida' })
+  }),
+  images: z.array(z.string().url('URL de imagen inválida')).optional()
+});
+
+// Esquema para crear valoración
+export const createValuationSchema = z.object({
+  propertyData: propertyValuationInputSchema,
+  includeComparisons: z.boolean().default(true),
+  includeRecommendations: z.boolean().default(true)
+});
+
+// Esquema para parámetros de reportes
+export const reportParametersSchema = z.object({
+  dateRange: z.object({
+    start: z.string().refine(val => !isNaN(Date.parse(val)), 'Fecha de inicio inválida'),
+    end: z.string().refine(val => !isNaN(Date.parse(val)), 'Fecha de fin inválida')
+  }).refine(data => new Date(data.start) < new Date(data.end), 'La fecha de inicio debe ser anterior a la fecha de fin'),
+  locations: z.array(z.string()).optional(),
+  propertyTypes: z.array(z.nativeEnum(PropertyType)).optional(),
+  priceRange: z.object({
+    min: z.number().min(0, 'Precio mínimo inválido'),
+    max: z.number().min(0, 'Precio máximo inválido')
+  }).refine(data => data.min < data.max, 'El precio mínimo debe ser menor al máximo').optional(),
+  includeComparisons: z.boolean().default(false),
+  includeForecasts: z.boolean().default(false),
+  includeRecommendations: z.boolean().default(true)
+});
+
+// Esquema para crear reportes
+export const createReportSchema = z.object({
+  title: z.string().min(3, 'Título debe tener al menos 3 caracteres').max(100, 'Título máximo 100 caracteres'),
+  type: z.enum(['location', 'property_type', 'comparison', 'valuation', 'comprehensive'], {
+    errorMap: () => ({ message: 'Tipo de reporte inválido' })
+  }),
+  parameters: reportParametersSchema,
+  format: z.enum(['pdf', 'csv', 'excel', 'json'], {
+    errorMap: () => ({ message: 'Formato de reporte inválido' })
+  }).default('pdf')
+});
+
+// Esquema para configuración de gráficas
+export const chartConfigurationSchema = z.object({
+  title: z.string().min(1, 'Título de gráfica requerido'),
+  type: z.enum(['line', 'bar', 'pie', 'area', 'scatter', 'heatmap'], {
+    errorMap: () => ({ message: 'Tipo de gráfica inválido' })
+  }),
+  data: z.array(z.any()),
+  config: z.object({
+    xAxis: z.string().optional(),
+    yAxis: z.string().optional(),
+    groupBy: z.string().optional(),
+    colors: z.array(z.string()).optional(),
+    showLegend: z.boolean().default(true),
+    showGrid: z.boolean().default(true)
+  })
+});
+
+// Esquema para filtros de búsqueda de propiedades comparables
+export const comparablePropertiesFilterSchema = z.object({
+  location: z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    radius: z.number().min(0.1, 'Radio mínimo 0.1km').max(50, 'Radio máximo 50km').default(5)
+  }),
+  propertyType: z.nativeEnum(PropertyType).optional(),
+  specifications: z.object({
+    bedrooms: z.object({
+      min: z.number().min(0).optional(),
+      max: z.number().min(0).optional()
+    }).optional(),
+    bathrooms: z.object({
+      min: z.number().min(0).optional(),
+      max: z.number().min(0).optional()
+    }).optional(),
+    squareMeters: z.object({
+      min: z.number().min(10).optional(),
+      max: z.number().min(10).optional()
+    }).optional(),
+    maxGuests: z.object({
+      min: z.number().min(1).optional(),
+      max: z.number().min(1).optional()
+    }).optional()
+  }).optional(),
+  priceRange: z.object({
+    min: z.number().min(0).optional(),
+    max: z.number().min(0).optional()
+  }).optional(),
+  amenities: z.array(z.string()).optional(),
+  limit: z.number().min(1, 'Mínimo 1 resultado').max(100, 'Máximo 100 resultados').default(20)
+});
+
+// Función helper para validar coordenadas
+export const validateCoordinates = (lat: number, lng: number): boolean => {
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+};
+
+// Función helper para validar rango de fechas
+export const validateDateRange = (start: string, end: string): boolean => {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const now = new Date();
+  
+  return startDate < endDate && startDate <= now;
+};
+
+// Esquema para actualizar estado de reporte
+export const updateReportStatusSchema = z.object({
+  status: z.enum(['pending', 'processing', 'completed', 'failed'], {
+    errorMap: () => ({ message: 'Estado de reporte inválido' })
+  }),
+  progress: z.number().min(0, 'Progreso mínimo 0%').max(100, 'Progreso máximo 100%').optional(),
+  errorMessage: z.string().optional()
+});
+
+// Esquemas de valoración de mercado agrupados
+export const marketValuationSchemas = {
+  marketAnalysis: marketAnalysisSchema,
+  propertyValuationInput: propertyValuationInputSchema,
+  createValuation: createValuationSchema,
+  reportParameters: reportParametersSchema,
+  createReport: createReportSchema,
+  chartConfiguration: chartConfigurationSchema,
+  comparablePropertiesFilter: comparablePropertiesFilterSchema,
+  updateReportStatus: updateReportStatusSchema,
+};
+
+// Tipos inferidos de los esquemas
+export type MarketAnalysisInput = z.infer<typeof marketAnalysisSchema>;
+export type PropertyValuationInputData = z.infer<typeof propertyValuationInputSchema>;
+export type CreateValuationInput = z.infer<typeof createValuationSchema>;
+export type ReportParametersInput = z.infer<typeof reportParametersSchema>;
+export type CreateReportInput = z.infer<typeof createReportSchema>;
+export type ChartConfigurationInput = z.infer<typeof chartConfigurationSchema>;
+export type ComparablePropertiesFilterInput = z.infer<typeof comparablePropertiesFilterSchema>;
+export type UpdateReportStatusInput = z.infer<typeof updateReportStatusSchema>;
+
 export default rentalSchemas;

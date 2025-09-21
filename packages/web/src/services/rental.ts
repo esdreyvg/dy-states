@@ -130,6 +130,39 @@ abstract class BaseApiService {
     const urlParams = new URLSearchParams(cleanParams);
     return urlParams.toString();
   }
+
+  // Métodos helper para HTTP
+  protected async get<T>(endpoint: string, params?: Record<string, unknown>): Promise<ApiResponse<T>> {
+    const queryString = params ? `?${this.buildQueryParams(params)}` : '';
+    return this.fetchApi<T>(`${this.baseUrl}${endpoint}${queryString}`);
+  }
+
+  protected async post<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
+    return this.fetchApi<T>(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  protected async put<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
+    return this.fetchApi<T>(`${this.baseUrl}${endpoint}`, {
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  protected async patch<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
+    return this.fetchApi<T>(`${this.baseUrl}${endpoint}`, {
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  protected async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.fetchApi<T>(`${this.baseUrl}${endpoint}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 /**
@@ -907,3 +940,456 @@ export const RentalUtils = {
     return `${prefix}${shortId}`;
   },
 };
+
+// =====================================================
+// SERVICIOS PARA VALORACIÓN Y ANÁLISIS DE MERCADO
+// =====================================================
+
+/**
+ * Servicio para análisis de estadísticas de mercado
+ */
+class MarketAnalysisAPI extends BaseApiService {
+  constructor() {
+    super('/api/market-analysis');
+  }
+
+  /**
+   * Obtener estadísticas de precios por ubicación
+   */
+  async getLocationStats(params: {
+    city?: string;
+    state?: string;
+    country?: string;
+    radius?: number;
+    coordinates?: { latitude: number; longitude: number };
+  }): Promise<ApiResponse<LocationPriceStats[]>> {
+    return this.get('/locations/stats', params);
+  }
+
+  /**
+   * Obtener estadísticas por tipo de propiedad
+   */
+  async getPropertyTypeStats(params: {
+    propertyType?: PropertyType;
+    location?: string;
+    dateRange?: { start: Date; end: Date };
+  }): Promise<ApiResponse<PropertyTypePriceStats[]>> {
+    return this.get('/property-types/stats', params);
+  }
+
+  /**
+   * Obtener datos para gráficas de mercado
+   */
+  async getMarketChartData(params: {
+    location?: string;
+    propertyType?: PropertyType;
+    dateRange: { start: Date; end: Date };
+    groupBy: 'month' | 'quarter' | 'year';
+    metrics: ('price' | 'occupancy' | 'revenue' | 'demand')[];
+  }): Promise<ApiResponse<MarketChartData[]>> {
+    return this.get('/chart-data', params);
+  }
+
+  /**
+   * Obtener tendencias estacionales
+   */
+  async getSeasonalTrends(params: {
+    location?: string;
+    propertyType?: PropertyType;
+    years?: number[];
+  }): Promise<ApiResponse<SeasonalTrend[]>> {
+    return this.get('/seasonal-trends', params);
+  }
+
+  /**
+   * Análisis de mercado personalizado
+   */
+  async performMarketAnalysis(data: MarketAnalysisDTO): Promise<ApiResponse<{
+    overview: {
+      totalProperties: number;
+      averagePrice: number;
+      totalRevenue: number;
+      occupancyRate: number;
+    };
+    trends: MarketChartData[];
+    statistics: {
+      byLocation: LocationPriceStats[];
+      byPropertyType: PropertyTypePriceStats[];
+    };
+    insights: string[];
+  }>> {
+    return this.post('/analyze', data);
+  }
+}
+
+/**
+ * Servicio para valoración automática de propiedades
+ */
+class PropertyValuationAPI extends BaseApiService {
+  constructor() {
+    super('/api/valuations');
+  }
+
+  /**
+   * Crear nueva valoración de propiedad
+   */
+  async createValuation(data: CreateValuationDTO): Promise<ApiResponse<PropertyValuation>> {
+    return this.post('/', data);
+  }
+
+  /**
+   * Obtener valoración por ID
+   */
+  async getValuation(id: string): Promise<ApiResponse<PropertyValuation>> {
+    return this.get(`/${id}`);
+  }
+
+  /**
+   * Obtener valoraciones del usuario
+   */
+  async getUserValuations(params: {
+    userId?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: 'date' | 'confidence' | 'price';
+    order?: 'asc' | 'desc';
+  }): Promise<ApiResponse<{
+    valuations: PropertyValuation[];
+    total: number;
+    pages: number;
+  }>> {
+    return this.get('/', params);
+  }
+
+  /**
+   * Actualizar valoración existente
+   */
+  async updateValuation(id: string, data: Partial<CreateValuationDTO>): Promise<ApiResponse<PropertyValuation>> {
+    return this.put(`/${id}`, data);
+  }
+
+  /**
+   * Eliminar valoración
+   */
+  async deleteValuation(id: string): Promise<ApiResponse<void>> {
+    return this.delete(`/${id}`);
+  }
+
+  /**
+   * Obtener estimación rápida de precio
+   */
+  async getQuickEstimate(data: {
+    location: { city: string; state: string };
+    propertyType: PropertyType;
+    specifications: {
+      bedrooms: number;
+      bathrooms: number;
+      squareMeters: number;
+    };
+  }): Promise<ApiResponse<{
+    estimatedPrice: number;
+    priceRange: { min: number; max: number };
+    confidence: number;
+  }>> {
+    return this.post('/quick-estimate', data);
+  }
+}
+
+/**
+ * Servicio para comparación de propiedades
+ */
+class PropertyComparisonAPI extends BaseApiService {
+  constructor() {
+    super('/api/comparisons');
+  }
+
+  /**
+   * Crear comparación de propiedades
+   */
+  async createComparison(data: {
+    targetPropertyId?: string;
+    targetPropertyData?: PropertyValuationInput;
+    filters: ComparablePropertiesFilterInput;
+  }): Promise<ApiResponse<PropertyComparison>> {
+    return this.post('/', data);
+  }
+
+  /**
+   * Buscar propiedades similares
+   */
+  async findSimilarProperties(filters: ComparablePropertiesFilterInput): Promise<ApiResponse<PropertyForComparison[]>> {
+    return this.get('/similar', filters);
+  }
+
+  /**
+   * Obtener comparación por ID
+   */
+  async getComparison(id: string): Promise<ApiResponse<PropertyComparison>> {
+    return this.get(`/${id}`);
+  }
+
+  /**
+   * Calcular métricas de comparación
+   */
+  async calculateMetrics(data: {
+    targetProperty: PropertyForComparison;
+    comparableProperties: PropertyForComparison[];
+  }): Promise<ApiResponse<ComparisonMetrics>> {
+    return this.post('/metrics', data);
+  }
+
+  /**
+   * Obtener recomendaciones de precios
+   */
+  async getPriceRecommendations(propertyId: string): Promise<ApiResponse<{
+    currentPrice: number;
+    recommendedPrice: number;
+    reasoning: string[];
+    competitorAnalysis: {
+      betterPriced: number;
+      similarPriced: number;
+      overpriced: number;
+    };
+  }>> {
+    return this.get(`/price-recommendations/${propertyId}`);
+  }
+}
+
+/**
+ * Servicio para generación de reportes
+ */
+class MarketReportAPI extends BaseApiService {
+  constructor() {
+    super('/api/reports');
+  }
+
+  /**
+   * Crear nuevo reporte
+   */
+  async createReport(data: CreateReportDTO): Promise<ApiResponse<{
+    reportId: string;
+    status: 'pending' | 'processing';
+    estimatedCompletion: Date;
+  }>> {
+    return this.post('/', data);
+  }
+
+  /**
+   * Obtener reporte por ID
+   */
+  async getReport(id: string): Promise<ApiResponse<MarketReport>> {
+    return this.get(`/${id}`);
+  }
+
+  /**
+   * Obtener estado de generación del reporte
+   */
+  async getReportStatus(id: string): Promise<ApiResponse<{
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    progress: number;
+    errorMessage?: string;
+  }>> {
+    return this.get(`/${id}/status`);
+  }
+
+  /**
+   * Listar reportes del usuario
+   */
+  async getUserReports(params: {
+    userId?: string;
+    type?: MarketReport['type'];
+    status?: 'pending' | 'processing' | 'completed' | 'failed';
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<{
+    reports: Omit<MarketReport, 'data'>[];
+    total: number;
+    pages: number;
+  }>> {
+    return this.get('/', params);
+  }
+
+  /**
+   * Descargar reporte en formato específico
+   */
+  async downloadReport(id: string, format: 'pdf' | 'csv' | 'excel'): Promise<ApiResponse<{
+    downloadUrl: string;
+    expiresAt: Date;
+  }>> {
+    return this.get(`/${id}/download`, { format });
+  }
+
+  /**
+   * Eliminar reporte
+   */
+  async deleteReport(id: string): Promise<ApiResponse<void>> {
+    return this.delete(`/${id}`);
+  }
+
+  /**
+   * Generar reporte de comparación instantáneo
+   */
+  async generateInstantComparison(data: {
+    properties: string[];
+    metrics: string[];
+  }): Promise<ApiResponse<{
+    reportData: {
+      comparisons: PropertyComparison[];
+      summary: string[];
+    };
+    charts: ChartConfiguration[];
+  }>> {
+    return this.post('/instant-comparison', data);
+  }
+
+  /**
+   * Programar reporte recurrente
+   */
+  async scheduleRecurringReport(data: {
+    reportTemplate: CreateReportDTO;
+    frequency: 'weekly' | 'monthly' | 'quarterly';
+    nextRun: Date;
+    recipients: string[];
+  }): Promise<ApiResponse<{
+    scheduleId: string;
+    nextRun: Date;
+  }>> {
+    return this.post('/schedule', data);
+  }
+}
+
+/**
+ * Servicio para gestión de gráficas y visualizaciones
+ */
+class ChartVisualizationAPI extends BaseApiService {
+  constructor() {
+    super('/api/charts');
+  }
+
+  /**
+   * Generar configuración de gráfica
+   */
+  async generateChartConfig(data: {
+    type: ChartConfiguration['type'];
+    data: ChartDataPoint[];
+    options: {
+      title: string;
+      xAxis?: string;
+      yAxis?: string;
+      groupBy?: string;
+      colors?: string[];
+    };
+  }): Promise<ApiResponse<ChartConfiguration>> {
+    return this.post('/generate-config', data);
+  }
+
+  /**
+   * Obtener datos para gráfica de precios
+   */
+  async getPriceChartData(params: {
+    location?: string;
+    propertyType?: PropertyType;
+    dateRange: { start: Date; end: Date };
+    interval: 'daily' | 'weekly' | 'monthly';
+  }): Promise<ApiResponse<PriceChartDataPoint[]>> {
+    return this.get('/price-data', params);
+  }
+
+  /**
+   * Obtener datos para gráfica de ocupación
+   */
+  async getOccupancyChartData(params: {
+    location?: string;
+    propertyType?: PropertyType;
+    dateRange: { start: Date; end: Date };
+  }): Promise<ApiResponse<OccupancyChartDataPoint[]>> {
+    return this.get('/occupancy-data', params);
+  }
+
+  /**
+   * Generar mapa de calor de precios
+   */
+  async generateHeatmapData(params: {
+    bounds: {
+      north: number;
+      south: number;
+      east: number;
+      west: number;
+    };
+    propertyType?: PropertyType;
+    zoom: number;
+  }): Promise<ApiResponse<HeatmapDataPoint[]>> {
+    return this.get('/heatmap-data', params);
+  }
+
+  /**
+   * Exportar gráfica como imagen
+   */
+  async exportChart(data: {
+    chartConfig: ChartConfiguration;
+    format: 'png' | 'svg' | 'pdf';
+    width?: number;
+    height?: number;
+  }): Promise<ApiResponse<{
+    imageUrl: string;
+    expiresAt: Date;
+  }>> {
+    return this.post('/export', data);
+  }
+}
+
+// Tipos auxiliares para gráficas
+interface ChartDataPoint {
+  [key: string]: string | number | Date;
+}
+
+interface PriceChartDataPoint {
+  date: string;
+  averagePrice: number;
+  medianPrice: number;
+  propertyCount: number;
+}
+
+interface OccupancyChartDataPoint {
+  date: string;
+  occupancyRate: number;
+  totalProperties: number;
+  bookedProperties: number;
+}
+
+interface HeatmapDataPoint {
+  latitude: number;
+  longitude: number;
+  price: number;
+  intensity: number;
+}
+
+// Importar tipos necesarios
+import {
+  LocationPriceStats,
+  PropertyTypePriceStats,
+  SeasonalTrend,
+  MarketChartData,
+  PropertyComparison,
+  PropertyForComparison,
+  ComparisonMetrics,
+  PropertyValuation,
+  MarketReport,
+  ChartConfiguration,
+  CreateValuationDTO,
+  CreateReportDTO,
+  MarketAnalysisDTO,
+  PropertyValuationInput,
+  PropertyType
+} from '../../../shared/src/types/rental';
+
+import {
+  ComparablePropertiesFilterInput
+} from '../../../shared/src/schemas/rental';
+
+// Instancias de servicios de valoración
+export const marketAnalysisService = new MarketAnalysisAPI();
+export const propertyValuationService = new PropertyValuationAPI();
+export const propertyComparisonService = new PropertyComparisonAPI();
+export const marketReportService = new MarketReportAPI();
+export const chartVisualizationService = new ChartVisualizationAPI();
