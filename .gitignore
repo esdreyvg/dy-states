@@ -15,9 +15,9 @@ pnpm-lock.yaml
 # ==============================================================================
 # Build outputs
 # ==============================================================================
-dist/
+packages/web/dist/
 build/
-out/
+packages/web/out/
 .next/
 .nuxt/
 .vuepress/dist
@@ -96,7 +96,9 @@ coverage/
 # Next.js specific
 # ==============================================================================
 .next/
+packages/web/.next/
 out/
+packages/web/out/
 .vercel/
 .swc/
 
