@@ -1213,3 +1213,437 @@ export interface MarketAnalysisDTO {
   };
   metrics: ('price' | 'occupancy' | 'revenue' | 'demand')[];
 }
+
+// =============================================================================
+// TIPOS PARA PERFILES Y RESEÑAS
+// =============================================================================
+
+// Tipos de usuario
+export enum UserType {
+  AGENT = 'agent',
+  OWNER = 'owner',
+  CLIENT = 'client',
+  GUEST = 'guest'
+}
+
+// Estado de verificación del perfil
+export enum VerificationStatus {
+  PENDING = 'pending',
+  VERIFIED = 'verified',
+  REJECTED = 'rejected',
+  SUSPENDED = 'suspended'
+}
+
+// Tipos de documentos de verificación
+export enum DocumentType {
+  ID_CARD = 'id_card',
+  PASSPORT = 'passport',
+  DRIVER_LICENSE = 'driver_license',
+  PROFESSIONAL_LICENSE = 'professional_license',
+  BUSINESS_REGISTRATION = 'business_registration'
+}
+
+// Documento de verificación
+export interface VerificationDocument {
+  id: string;
+  type: DocumentType;
+  documentNumber: string;
+  expiryDate?: Date;
+  fileUrl: string;
+  uploadedAt: Date;
+  verifiedAt?: Date;
+  verifiedBy?: string;
+  status: VerificationStatus;
+}
+
+// Información de contacto
+export interface ContactInfo {
+  email: string;
+  phone: string;
+  whatsapp?: string;
+  telegram?: string;
+  website?: string;
+  socialMedia?: {
+    facebook?: string;
+    instagram?: string;
+    linkedin?: string;
+    twitter?: string;
+  };
+}
+
+// Dirección
+export interface Address {
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+// Estadísticas del perfil
+export interface ProfileStats {
+  totalProperties: number;
+  totalBookings: number;
+  totalRevenue: number;
+  averageRating: number;
+  totalReviews: number;
+  responseRate: number;
+  responseTime: number; // en horas
+  joinedDate: Date;
+  lastActive: Date;
+}
+
+// Preferencias y configuración
+export interface UserPreferences {
+  language: string;
+  currency: string;
+  timezone: string;
+  notifications: {
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+    marketing: boolean;
+  };
+  privacy: {
+    showContactInfo: boolean;
+    showProperties: boolean;
+    showReviews: boolean;
+    allowMessages: boolean;
+  };
+}
+
+// Certificaciones y licencias
+export interface Certification {
+  id: string;
+  name: string;
+  issuingOrganization: string;
+  issueDate: Date;
+  expiryDate?: Date;
+  certificateNumber: string;
+  certificateUrl?: string;
+  isVerified: boolean;
+}
+
+// Perfil base de usuario
+export interface UserProfile {
+  id: string;
+  userType: UserType;
+  firstName: string;
+  lastName: string;
+  displayName?: string;
+  avatar?: string;
+  bio?: string;
+  contactInfo: ContactInfo;
+  address?: Address;
+  verificationStatus: VerificationStatus;
+  verificationDocuments: VerificationDocument[];
+  stats: ProfileStats;
+  preferences: UserPreferences;
+  createdAt: Date;
+  updatedAt: Date;
+  isActive: boolean;
+}
+
+// Perfil de agente inmobiliario
+export interface AgentProfile extends UserProfile {
+  userType: UserType.AGENT;
+  licenseNumber: string;
+  agency?: {
+    name: string;
+    logo?: string;
+    website?: string;
+    address: Address;
+  };
+  specializations: string[]; // ej: "residencial", "comercial", "lujo"
+  languages: string[];
+  certifications: Certification[];
+  workingHours: {
+    monday: { start: string; end: string; available: boolean };
+    tuesday: { start: string; end: string; available: boolean };
+    wednesday: { start: string; end: string; available: boolean };
+    thursday: { start: string; end: string; available: boolean };
+    friday: { start: string; end: string; available: boolean };
+    saturday: { start: string; end: string; available: boolean };
+    sunday: { start: string; end: string; available: boolean };
+  };
+  commission: {
+    type: 'percentage' | 'fixed';
+    value: number;
+    currency?: string;
+  };
+}
+
+// Perfil de propietario
+export interface OwnerProfile extends UserProfile {
+  userType: UserType.OWNER;
+  propertyTypes: PropertyType[];
+  investmentExperience: 'beginner' | 'intermediate' | 'expert';
+  preferredManagement: 'self' | 'agent' | 'company';
+  taxId?: string;
+  bankingInfo?: {
+    bankName: string;
+    accountNumber: string;
+    routingNumber: string;
+    accountHolder: string;
+  };
+  insurance?: {
+    provider: string;
+    policyNumber: string;
+    expiryDate: Date;
+    coverage: number;
+  };
+}
+
+// Perfil de cliente/huésped
+export interface ClientProfile extends UserProfile {
+  userType: UserType.CLIENT | UserType.GUEST;
+  emergencyContact?: {
+    name: string;
+    relationship: string;
+    phone: string;
+    email?: string;
+  };
+  travelPreferences?: {
+    accommodationType: PropertyType[];
+    priceRange: {
+      min: number;
+      max: number;
+      currency: string;
+    };
+    amenities: string[];
+    maxGuests: number;
+    smokingAllowed: boolean;
+    petsAllowed: boolean;
+  };
+  identityVerification?: {
+    documentType: DocumentType;
+    documentNumber: string;
+    isVerified: boolean;
+    verifiedAt?: Date;
+  };
+}
+
+// =============================================================================
+// TIPOS PARA SISTEMA DE RESEÑAS
+// =============================================================================
+
+// Tipos de reseñas
+export enum ReviewType {
+  PROPERTY = 'property',
+  AGENT = 'agent',
+  OWNER = 'owner',
+  GUEST = 'guest',
+  EXPERIENCE = 'experience'
+}
+
+// Estado de la reseña
+export enum ReviewStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  FLAGGED = 'flagged',
+  HIDDEN = 'hidden'
+}
+
+// Motivos de reporte
+export enum ReportReason {
+  INAPPROPRIATE_LANGUAGE = 'inappropriate_language',
+  FALSE_INFORMATION = 'false_information',
+  SPAM = 'spam',
+  DISCRIMINATION = 'discrimination',
+  HARASSMENT = 'harassment',
+  OFF_TOPIC = 'off_topic',
+  OTHER = 'other'
+}
+
+// Criterios de calificación
+export interface RatingCriteria {
+  cleanliness: number; // 1-5
+  accuracy: number; // 1-5
+  communication: number; // 1-5
+  location: number; // 1-5
+  checkIn: number; // 1-5
+  value: number; // 1-5
+}
+
+// Reseña base
+export interface Review {
+  id: string;
+  reviewType: ReviewType;
+  reviewerId: string;
+  reviewerName: string;
+  reviewerAvatar?: string;
+  targetId: string; // ID de la propiedad, agente, etc.
+  targetType: ReviewType;
+  rating: number; // 1-5 calificación general
+  criteria?: RatingCriteria; // calificaciones detalladas
+  title?: string;
+  comment: string;
+  pros?: string[];
+  cons?: string[];
+  photos?: string[];
+  bookingId?: string; // para vincular con reserva específica
+  stayDate?: Date; // fecha de la estadía/experiencia
+  isAnonymous: boolean;
+  status: ReviewStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  moderatedAt?: Date;
+  moderatedBy?: string;
+  moderationNotes?: string;
+  helpfulVotes: number;
+  reportCount: number;
+  reports?: ReviewReport[];
+}
+
+// Reporte de reseña
+export interface ReviewReport {
+  id: string;
+  reviewId: string;
+  reporterId: string;
+  reason: ReportReason;
+  description?: string;
+  createdAt: Date;
+  status: 'pending' | 'reviewed' | 'dismissed';
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  action?: 'none' | 'warning' | 'remove' | 'edit';
+}
+
+// Respuesta a reseña
+export interface ReviewResponse {
+  id: string;
+  reviewId: string;
+  responderId: string;
+  responderName: string;
+  responderType: UserType;
+  response: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isOfficial: boolean; // respuesta oficial del propietario/agente
+}
+
+// Estadísticas de reseñas
+export interface ReviewStats {
+  totalReviews: number;
+  averageRating: number;
+  ratingDistribution: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+    5: number;
+  };
+  criteriaAverages?: {
+    cleanliness: number;
+    accuracy: number;
+    communication: number;
+    location: number;
+    checkIn: number;
+    value: number;
+  };
+  recentReviews: Review[];
+  topKeywords: {
+    positive: string[];
+    negative: string[];
+  };
+}
+
+// Filtros para reseñas
+export interface ReviewFilters {
+  rating?: number[];
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  reviewType?: ReviewType[];
+  verified?: boolean;
+  withPhotos?: boolean;
+  language?: string;
+  sortBy?: 'newest' | 'oldest' | 'highest_rating' | 'lowest_rating' | 'most_helpful';
+}
+
+// Configuración de moderación
+export interface ModerationSettings {
+  autoApprove: boolean;
+  requireVerifiedBooking: boolean;
+  minimumStayDuration: number; // horas
+  profanityFilter: boolean;
+  spamDetection: boolean;
+  duplicateDetection: boolean;
+  reviewCooldown: number; // días entre reseñas del mismo usuario
+  allowAnonymous: boolean;
+  allowPhotos: boolean;
+  maxPhotosPerReview: number;
+  moderatorNotifications: boolean;
+}
+
+// =============================================================================
+// TIPOS PARA MODERACIÓN
+// =============================================================================
+
+// Acción de moderación
+export interface ModerationAction {
+  id: string;
+  reviewId: string;
+  moderatorId: string;
+  moderatorName: string;
+  action: 'approve' | 'reject' | 'flag' | 'edit' | 'hide' | 'warn_user';
+  reason?: string;
+  notes?: string;
+  originalContent?: string;
+  editedContent?: string;
+  createdAt: Date;
+  isAutomatic: boolean;
+}
+
+// Queue de moderación
+export interface ModerationQueue {
+  id: string;
+  reviewId: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  flags: string[];
+  assignedTo?: string;
+  createdAt: Date;
+  resolvedAt?: Date;
+  escalated: boolean;
+}
+
+// Métricas de moderación
+export interface ModerationMetrics {
+  totalPending: number;
+  totalProcessed: number;
+  averageProcessingTime: number; // en horas
+  approvalRate: number;
+  rejectionRate: number;
+  flaggedRate: number;
+  moderatorStats: {
+    moderatorId: string;
+    moderatorName: string;
+    processed: number;
+    approved: number;
+    rejected: number;
+    averageTime: number;
+  }[];
+}
+
+// Configuración de alertas
+export interface AlertSettings {
+  highVolumeThreshold: number;
+  suspiciousPatternDetection: boolean;
+  emergencyEscalation: boolean;
+  notificationChannels: {
+    email: boolean;
+    slack: boolean;
+    sms: boolean;
+  };
+  escalationRules: {
+    timeThreshold: number; // horas
+    reportThreshold: number;
+    severityLevel: 'low' | 'medium' | 'high';
+  }[];
+}

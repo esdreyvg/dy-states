@@ -163,6 +163,57 @@ abstract class BaseApiService {
       method: 'DELETE',
     });
   }
+
+  // Método auxiliar para requests con FormData
+  protected async request<T>(endpoint: string, options: RequestInit): Promise<ApiResponse<T>> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    // Para FormData, no agregamos Content-Type - el navegador lo establecerá automáticamente
+    const defaultHeaders: Record<string, string> = {
+      'Accept': 'application/json',
+      'Accept-Language': 'es-DO',
+    };
+
+    // Agregar token de autenticación si está disponible
+    const token = this.getAuthToken();
+    if (token) {
+      defaultHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Si no es FormData, agregar Content-Type
+    if (!(options.body instanceof FormData)) {
+      defaultHeaders['Content-Type'] = 'application/json';
+    }
+
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        ...defaultHeaders,
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || 
+          errorData.error || 
+          `Error HTTP: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
+
+  }
 }
 
 /**
@@ -1364,7 +1415,6 @@ interface HeatmapDataPoint {
   intensity: number;
 }
 
-// Importar tipos necesarios
 import {
   LocationPriceStats,
   PropertyTypePriceStats,
@@ -1380,11 +1430,39 @@ import {
   CreateReportDTO,
   MarketAnalysisDTO,
   PropertyValuationInput,
-  PropertyType
+  PropertyType,
+  UserProfile,
+  AgentProfile,
+  OwnerProfile,
+  ClientProfile,
+  Review,
+  ReviewStats,
+  ReviewFilters,
+  ReviewResponse,
+  ReviewReport,
+  ModerationAction,
+  ModerationQueue,
+  ModerationMetrics,
+  ModerationSettings,
+  UserType,
+  ReviewType,
+  ReviewStatus,
+  VerificationStatus
 } from '../../../shared/src/types/rental';
 
 import {
-  ComparablePropertiesFilterInput
+  ComparablePropertiesFilterInput,
+  UserProfileInput,
+  AgentProfileInput,
+  OwnerProfileInput,
+  ClientProfileInput,
+  CreateReviewInput,
+  UpdateReviewInput,
+  ReportReviewInput,
+  ReviewResponseInput,
+  ReviewFiltersInput,
+  ModerationActionInput,
+  ModerationSettingsInput
 } from '../../../shared/src/schemas/rental';
 
 // Instancias de servicios de valoración
@@ -1393,3 +1471,375 @@ export const propertyValuationService = new PropertyValuationAPI();
 export const propertyComparisonService = new PropertyComparisonAPI();
 export const marketReportService = new MarketReportAPI();
 export const chartVisualizationService = new ChartVisualizationAPI();
+
+// =============================================================================
+// SERVICIOS API PARA PERFILES Y RESEÑAS
+// =============================================================================
+
+// Clase base para servicios de perfiles
+class ProfilesAPI extends BaseApiService {
+  constructor() {
+    super('profiles');
+  }
+
+  // Obtener perfil por ID
+  async getProfile(id: string): Promise<ApiResponse<UserProfile>> {
+    return this.get<UserProfile>(`/${id}`);
+  }
+
+  // Obtener perfil por tipo de usuario
+  async getProfilesByType(userType: UserType): Promise<ApiResponse<UserProfile[]>> {
+    return this.get<UserProfile[]>(`/type/${userType}`);
+  }
+
+  // Crear perfil de usuario
+  async createProfile(profile: UserProfileInput): Promise<ApiResponse<UserProfile>> {
+    return this.post<UserProfile>('/', profile);
+  }
+
+  // Actualizar perfil
+  async updateProfile(id: string, updates: Partial<UserProfileInput>): Promise<ApiResponse<UserProfile>> {
+    return this.put<UserProfile>(`/${id}`, updates);
+  }
+
+  // Eliminar perfil
+  async deleteProfile(id: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.delete<{ success: boolean }>(`/${id}`);
+  }
+
+  // Buscar perfiles
+  async searchProfiles(query: string, filters?: {
+    userType?: UserType;
+    verificationStatus?: VerificationStatus;
+    location?: string;
+    specializations?: string[];
+  }): Promise<ApiResponse<UserProfile[]>> {
+    const params = new URLSearchParams({ q: query });
+    
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach(v => params.append(key, v));
+        } else if (value) {
+          params.append(key, value.toString());
+        }
+      });
+    }
+
+    return this.get<UserProfile[]>(`/search?${params.toString()}`);
+  }
+
+  // Subir documento de verificación
+  async uploadVerificationDocument(
+    profileId: string, 
+    document: File, 
+    documentType: string
+  ): Promise<ApiResponse<{ documentId: string; fileUrl: string }>> {
+    const formData = new FormData();
+    formData.append('document', document);
+    formData.append('type', documentType);
+
+    return this.request<{ documentId: string; fileUrl: string }>(`/${profileId}/documents`, {
+      method: 'POST',
+      body: formData
+    });
+  }
+
+  // Actualizar estado de verificación
+  async updateVerificationStatus(
+    profileId: string, 
+    status: VerificationStatus, 
+    notes?: string
+  ): Promise<ApiResponse<UserProfile>> {
+    return this.put<UserProfile>(`/${profileId}/verification`, { status, notes });
+  }
+}
+
+// Servicio específico para agentes
+class AgentProfilesAPI extends BaseApiService {
+  constructor() {
+    super('agents');
+  }
+
+  // Crear perfil de agente
+  async createAgentProfile(profile: AgentProfileInput): Promise<ApiResponse<AgentProfile>> {
+    return this.post<AgentProfile>('/', profile);
+  }
+
+  // Actualizar perfil de agente
+  async updateAgentProfile(id: string, updates: Partial<AgentProfileInput>): Promise<ApiResponse<AgentProfile>> {
+    return this.put<AgentProfile>(`/${id}`, updates);
+  }
+
+  // Obtener agentes por especialización
+  async getAgentsBySpecialization(specialization: string): Promise<ApiResponse<AgentProfile[]>> {
+    return this.get<AgentProfile[]>(`/specialization/${specialization}`);
+  }
+
+  // Obtener agentes disponibles
+  async getAvailableAgents(date: string, time: string): Promise<ApiResponse<AgentProfile[]>> {
+    return this.get<AgentProfile[]>(`/available?date=${date}&time=${time}`);
+  }
+
+  // Actualizar horarios de trabajo
+  async updateWorkingHours(
+    agentId: string, 
+    workingHours: AgentProfile['workingHours']
+  ): Promise<ApiResponse<AgentProfile>> {
+    return this.put<AgentProfile>(`/${agentId}/hours`, { workingHours });
+  }
+
+  // Gestionar certificaciones
+  async addCertification(
+    agentId: string, 
+    certification: {
+      name: string;
+      issuingOrganization: string;
+      issueDate: Date;
+      expiryDate?: Date;
+      certificateNumber: string;
+      certificateUrl?: string;
+    }
+  ): Promise<ApiResponse<AgentProfile>> {
+    return this.post<AgentProfile>(`/${agentId}/certifications`, certification);
+  }
+
+  async removeCertification(
+    agentId: string, 
+    certificationId: string
+  ): Promise<ApiResponse<AgentProfile>> {
+    return this.delete<AgentProfile>(`/${agentId}/certifications/${certificationId}`);
+  }
+}
+
+// Servicio específico para propietarios
+class OwnerProfilesAPI extends BaseApiService {
+  constructor() {
+    super('owners');
+  }
+
+  // Crear perfil de propietario
+  async createOwnerProfile(profile: OwnerProfileInput): Promise<ApiResponse<OwnerProfile>> {
+    return this.post<OwnerProfile>('/', profile);
+  }
+
+  // Actualizar perfil de propietario
+  async updateOwnerProfile(id: string, updates: Partial<OwnerProfileInput>): Promise<ApiResponse<OwnerProfile>> {
+    return this.put<OwnerProfile>(`/${id}`, updates);
+  }
+
+  // Obtener propietarios por tipo de propiedad
+  async getOwnersByPropertyType(propertyType: PropertyType): Promise<ApiResponse<OwnerProfile[]>> {
+    return this.get<OwnerProfile[]>(`/property-type/${propertyType}`);
+  }
+
+  // Actualizar información bancaria
+  async updateBankingInfo(
+    ownerId: string, 
+    bankingInfo: OwnerProfile['bankingInfo']
+  ): Promise<ApiResponse<OwnerProfile>> {
+    return this.put<OwnerProfile>(`/${ownerId}/banking`, { bankingInfo });
+  }
+
+  // Actualizar información de seguro
+  async updateInsuranceInfo(
+    ownerId: string, 
+    insurance: OwnerProfile['insurance']
+  ): Promise<ApiResponse<OwnerProfile>> {
+    return this.put<OwnerProfile>(`/${ownerId}/insurance`, { insurance });
+  }
+}
+
+// Servicio específico para clientes
+class ClientProfilesAPI extends BaseApiService {
+  constructor() {
+    super('clients');
+  }
+
+  // Crear perfil de cliente
+  async createClientProfile(profile: ClientProfileInput): Promise<ApiResponse<ClientProfile>> {
+    return this.post<ClientProfile>('/', profile);
+  }
+
+  // Actualizar perfil de cliente
+  async updateClientProfile(id: string, updates: Partial<ClientProfileInput>): Promise<ApiResponse<ClientProfile>> {
+    return this.put<ClientProfile>(`/${id}`, updates);
+  }
+
+  // Actualizar preferencias de viaje
+  async updateTravelPreferences(
+    clientId: string, 
+    preferences: ClientProfile['travelPreferences']
+  ): Promise<ApiResponse<ClientProfile>> {
+    return this.put<ClientProfile>(`/${clientId}/preferences`, { travelPreferences: preferences });
+  }
+
+  // Verificar identidad
+  async verifyIdentity(
+    clientId: string, 
+    documentFile: File, 
+    documentType: string, 
+    documentNumber: string
+  ): Promise<ApiResponse<ClientProfile>> {
+    const formData = new FormData();
+    formData.append('document', documentFile);
+    formData.append('type', documentType);
+    formData.append('number', documentNumber);
+
+    return this.request<ClientProfile>(`/${clientId}/verify-identity`, {
+      method: 'POST',
+      body: formData
+    });
+  }
+}
+
+// Servicio para sistema de reseñas
+class ReviewsAPI extends BaseApiService {
+  constructor() {
+    super('reviews');
+  }
+
+  // Obtener reseñas con filtros
+  async getReviews(filters?: ReviewFiltersInput): Promise<ApiResponse<Review[]>> {
+    const params = new URLSearchParams();
+    
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach(v => params.append(key, v.toString()));
+        } else if (value) {
+          params.append(key, value.toString());
+        }
+      });
+    }
+
+    return this.get<Review[]>(`?${params.toString()}`);
+  }
+
+  // Obtener reseña por ID
+  async getReview(id: string): Promise<ApiResponse<Review>> {
+    return this.get<Review>(`/${id}`);
+  }
+
+  // Crear nueva reseña
+  async createReview(review: CreateReviewInput): Promise<ApiResponse<Review>> {
+    return this.post<Review>('/', review);
+  }
+
+  // Actualizar reseña
+  async updateReview(id: string, updates: UpdateReviewInput): Promise<ApiResponse<Review>> {
+    return this.put<Review>(`/${id}`, updates);
+  }
+
+  // Eliminar reseña
+  async deleteReview(id: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.delete<{ success: boolean }>(`/${id}`);
+  }
+
+  // Obtener reseñas por objetivo (propiedad, agente, etc.)
+  async getReviewsByTarget(targetId: string, targetType: ReviewType): Promise<ApiResponse<Review[]>> {
+    return this.get<Review[]>(`/target/${targetType}/${targetId}`);
+  }
+
+  // Obtener estadísticas de reseñas
+  async getReviewStats(targetId: string, targetType: ReviewType): Promise<ApiResponse<ReviewStats>> {
+    return this.get<ReviewStats>(`/stats/${targetType}/${targetId}`);
+  }
+
+  // Marcar reseña como útil
+  async markReviewHelpful(reviewId: string): Promise<ApiResponse<Review>> {
+    return this.post<Review>(`/${reviewId}/helpful`, {});
+  }
+
+  // Reportar reseña
+  async reportReview(report: ReportReviewInput): Promise<ApiResponse<ReviewReport>> {
+    return this.post<ReviewReport>(`/${report.reviewId}/report`, report);
+  }
+
+  // Responder a reseña
+  async respondToReview(response: ReviewResponseInput): Promise<ApiResponse<ReviewResponse>> {
+    return this.post<ReviewResponse>(`/${response.reviewId}/respond`, response);
+  }
+
+  // Subir fotos para reseña
+  async uploadReviewPhotos(reviewId: string, photos: File[]): Promise<ApiResponse<{ photoUrls: string[] }>> {
+    const formData = new FormData();
+    photos.forEach((photo, index) => {
+      formData.append(`photo_${index}`, photo);
+    });
+
+    return this.request<{ photoUrls: string[] }>(`/${reviewId}/photos`, {
+      method: 'POST',
+      body: formData
+    });
+  }
+}
+
+// Servicio para moderación de reseñas
+class ReviewModerationAPI extends BaseApiService {
+  constructor() {
+    super('moderation');
+  }
+
+  // Obtener cola de moderación
+  async getModerationQueue(): Promise<ApiResponse<ModerationQueue[]>> {
+    return this.get<ModerationQueue[]>('/queue');
+  }
+
+  // Obtener reseñas pendientes de moderación
+  async getPendingReviews(): Promise<ApiResponse<Review[]>> {
+    return this.get<Review[]>('/pending');
+  }
+
+  // Ejecutar acción de moderación
+  async executeAction(action: ModerationActionInput): Promise<ApiResponse<ModerationAction>> {
+    return this.post<ModerationAction>('/action', action);
+  }
+
+  // Obtener métricas de moderación
+  async getModerationMetrics(
+    dateRange?: { start: Date; end: Date }
+  ): Promise<ApiResponse<ModerationMetrics>> {
+    const params = new URLSearchParams();
+    
+    if (dateRange) {
+      params.append('start', dateRange.start.toISOString());
+      params.append('end', dateRange.end.toISOString());
+    }
+
+    return this.get<ModerationMetrics>(`/metrics?${params.toString()}`);
+  }
+
+  // Obtener configuración de moderación
+  async getModerationSettings(): Promise<ApiResponse<ModerationSettings>> {
+    return this.get<ModerationSettings>('/settings');
+  }
+
+  // Actualizar configuración de moderación
+  async updateModerationSettings(settings: ModerationSettingsInput): Promise<ApiResponse<ModerationSettings>> {
+    return this.put<ModerationSettings>('/settings', settings);
+  }
+
+  // Asignar moderador a reseña
+  async assignModerator(reviewId: string, moderatorId: string): Promise<ApiResponse<ModerationQueue>> {
+    return this.post<ModerationQueue>(`/assign`, { reviewId, moderatorId });
+  }
+
+  // Escalar reseña a supervisión
+  async escalateReview(reviewId: string, reason: string): Promise<ApiResponse<ModerationQueue>> {
+    return this.post<ModerationQueue>(`/escalate`, { reviewId, reason });
+  }
+
+  // Obtener historial de acciones de moderación
+  async getModerationHistory(reviewId: string): Promise<ApiResponse<ModerationAction[]>> {
+    return this.get<ModerationAction[]>(`/history/${reviewId}`);
+  }
+}
+
+// Instancias de servicios para perfiles y reseñas
+export const profilesService = new ProfilesAPI();
+export const agentProfilesService = new AgentProfilesAPI();
+export const ownerProfilesService = new OwnerProfilesAPI();
+export const clientProfilesService = new ClientProfilesAPI();
+export const reviewsService = new ReviewsAPI();
+export const reviewModerationService = new ReviewModerationAPI();

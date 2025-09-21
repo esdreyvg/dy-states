@@ -21,6 +21,12 @@ import {
   TransportationType,
   AttractionType,
   PaymentProvider,
+  UserType,
+  VerificationStatus,
+  DocumentType,
+  ReviewType,
+  ReviewStatus,
+  ReportReason,
 } from '../types/rental';
 
 // Configuración de mensajes de error en español
@@ -900,5 +906,385 @@ export type CreateReportInput = z.infer<typeof createReportSchema>;
 export type ChartConfigurationInput = z.infer<typeof chartConfigurationSchema>;
 export type ComparablePropertiesFilterInput = z.infer<typeof comparablePropertiesFilterSchema>;
 export type UpdateReportStatusInput = z.infer<typeof updateReportStatusSchema>;
+
+// =============================================================================
+// ESQUEMAS DE VALIDACIÓN PARA PERFILES Y RESEÑAS
+// =============================================================================
+
+// Esquema para documento de verificación
+export const verificationDocumentSchema = z.object({
+  type: z.nativeEnum(DocumentType, {
+    errorMap: () => ({ message: 'Tipo de documento inválido' })
+  }),
+  documentNumber: z.string()
+    .min(3, 'Número de documento debe tener al menos 3 caracteres')
+    .max(50, 'Número de documento no puede exceder 50 caracteres'),
+  expiryDate: z.date().optional(),
+  fileUrl: z.string().url('URL del archivo inválida')
+});
+
+// Esquema para información de contacto
+export const contactInfoSchema = z.object({
+  email: z.string().email('Email inválido'),
+  phone: z.string()
+    .min(10, 'Teléfono debe tener al menos 10 dígitos')
+    .max(15, 'Teléfono no puede exceder 15 dígitos')
+    .regex(/^[\+]?[1-9][\d]{0,15}$/, 'Formato de teléfono inválido'),
+  whatsapp: z.string()
+    .regex(/^[\+]?[1-9][\d]{0,15}$/, 'Formato de WhatsApp inválido')
+    .optional(),
+  telegram: z.string().min(5, 'Usuario de Telegram inválido').optional(),
+  website: z.string().url('URL del sitio web inválida').optional(),
+  socialMedia: z.object({
+    facebook: z.string().url('URL de Facebook inválida').optional(),
+    instagram: z.string().min(1, 'Usuario de Instagram inválido').optional(),
+    linkedin: z.string().url('URL de LinkedIn inválida').optional(),
+    twitter: z.string().min(1, 'Usuario de Twitter inválido').optional()
+  }).optional()
+});
+
+// Esquema para dirección
+export const addressSchema = z.object({
+  street: z.string().min(5, 'Dirección debe tener al menos 5 caracteres'),
+  city: z.string().min(2, 'Ciudad debe tener al menos 2 caracteres'),
+  state: z.string().min(2, 'Provincia debe tener al menos 2 caracteres'),
+  postalCode: z.string()
+    .min(5, 'Código postal debe tener al menos 5 caracteres')
+    .max(10, 'Código postal no puede exceder 10 caracteres'),
+  country: z.string().min(2, 'País debe tener al menos 2 caracteres'),
+  coordinates: z.object({
+    latitude: z.number().min(-90, 'Latitud inválida').max(90, 'Latitud inválida'),
+    longitude: z.number().min(-180, 'Longitud inválida').max(180, 'Longitud inválida')
+  }).optional()
+});
+
+// Esquema para preferencias de usuario
+export const userPreferencesSchema = z.object({
+  language: z.string().min(2, 'Código de idioma inválido'),
+  currency: z.string().length(3, 'Código de moneda debe tener 3 caracteres'),
+  timezone: z.string().min(3, 'Zona horaria inválida'),
+  notifications: z.object({
+    email: z.boolean(),
+    sms: z.boolean(),
+    push: z.boolean(),
+    marketing: z.boolean()
+  }),
+  privacy: z.object({
+    showContactInfo: z.boolean(),
+    showProperties: z.boolean(),
+    showReviews: z.boolean(),
+    allowMessages: z.boolean()
+  })
+});
+
+// Esquema para certificación
+export const certificationSchema = z.object({
+  name: z.string().min(2, 'Nombre de certificación debe tener al menos 2 caracteres'),
+  issuingOrganization: z.string().min(2, 'Organización emisora requerida'),
+  issueDate: z.date({ errorMap: () => ({ message: 'Fecha de emisión inválida' }) }),
+  expiryDate: z.date().optional(),
+  certificateNumber: z.string().min(1, 'Número de certificado requerido'),
+  certificateUrl: z.string().url('URL del certificado inválida').optional()
+});
+
+// Esquema base para perfil de usuario
+export const userProfileSchema = z.object({
+  userType: z.nativeEnum(UserType, {
+    errorMap: () => ({ message: 'Tipo de usuario inválido' })
+  }),
+  firstName: z.string()
+    .min(2, 'Nombre debe tener al menos 2 caracteres')
+    .max(50, 'Nombre no puede exceder 50 caracteres'),
+  lastName: z.string()
+    .min(2, 'Apellido debe tener al menos 2 caracteres')
+    .max(50, 'Apellido no puede exceder 50 caracteres'),
+  displayName: z.string()
+    .min(2, 'Nombre para mostrar debe tener al menos 2 caracteres')
+    .max(100, 'Nombre para mostrar no puede exceder 100 caracteres')
+    .optional(),
+  avatar: z.string().url('URL del avatar inválida').optional(),
+  bio: z.string()
+    .max(500, 'Biografía no puede exceder 500 caracteres')
+    .optional(),
+  contactInfo: contactInfoSchema,
+  address: addressSchema.optional(),
+  verificationDocuments: z.array(verificationDocumentSchema).optional(),
+  preferences: userPreferencesSchema,
+  isActive: z.boolean().default(true)
+});
+
+// Esquema para perfil de agente
+export const agentProfileSchema = userProfileSchema.extend({
+  userType: z.literal(UserType.AGENT),
+  licenseNumber: z.string()
+    .min(5, 'Número de licencia debe tener al menos 5 caracteres')
+    .max(50, 'Número de licencia no puede exceder 50 caracteres'),
+  agency: z.object({
+    name: z.string().min(2, 'Nombre de agencia requerido'),
+    logo: z.string().url('URL del logo inválida').optional(),
+    website: z.string().url('URL del sitio web inválida').optional(),
+    address: addressSchema
+  }).optional(),
+  specializations: z.array(z.string().min(1, 'Especialización inválida'))
+    .min(1, 'Debe tener al menos una especialización'),
+  languages: z.array(z.string().min(2, 'Código de idioma inválido'))
+    .min(1, 'Debe dominar al menos un idioma'),
+  certifications: z.array(certificationSchema).optional(),
+  workingHours: z.object({
+    monday: z.object({ start: z.string(), end: z.string(), available: z.boolean() }),
+    tuesday: z.object({ start: z.string(), end: z.string(), available: z.boolean() }),
+    wednesday: z.object({ start: z.string(), end: z.string(), available: z.boolean() }),
+    thursday: z.object({ start: z.string(), end: z.string(), available: z.boolean() }),
+    friday: z.object({ start: z.string(), end: z.string(), available: z.boolean() }),
+    saturday: z.object({ start: z.string(), end: z.string(), available: z.boolean() }),
+    sunday: z.object({ start: z.string(), end: z.string(), available: z.boolean() })
+  }),
+  commission: z.object({
+    type: z.enum(['percentage', 'fixed'], {
+      errorMap: () => ({ message: 'Tipo de comisión inválido' })
+    }),
+    value: z.number().min(0, 'Valor de comisión debe ser positivo'),
+    currency: z.string().length(3, 'Código de moneda inválido').optional()
+  })
+});
+
+// Esquema para perfil de propietario
+export const ownerProfileSchema = userProfileSchema.extend({
+  userType: z.literal(UserType.OWNER),
+  propertyTypes: z.array(z.string()).min(1, 'Debe seleccionar al menos un tipo de propiedad'),
+  investmentExperience: z.enum(['beginner', 'intermediate', 'expert'], {
+    errorMap: () => ({ message: 'Nivel de experiencia inválido' })
+  }),
+  preferredManagement: z.enum(['self', 'agent', 'company'], {
+    errorMap: () => ({ message: 'Tipo de gestión preferida inválido' })
+  }),
+  taxId: z.string()
+    .min(5, 'RNC debe tener al menos 5 caracteres')
+    .max(15, 'RNC no puede exceder 15 caracteres')
+    .optional(),
+  bankingInfo: z.object({
+    bankName: z.string().min(2, 'Nombre del banco requerido'),
+    accountNumber: z.string().min(8, 'Número de cuenta inválido'),
+    routingNumber: z.string().min(6, 'Número de ruta inválido'),
+    accountHolder: z.string().min(2, 'Titular de cuenta requerido')
+  }).optional(),
+  insurance: z.object({
+    provider: z.string().min(2, 'Proveedor de seguro requerido'),
+    policyNumber: z.string().min(5, 'Número de póliza requerido'),
+    expiryDate: z.date({ errorMap: () => ({ message: 'Fecha de vencimiento inválida' }) }),
+    coverage: z.number().min(1000, 'Cobertura debe ser al menos RD$1,000')
+  }).optional()
+});
+
+// Esquema para perfil de cliente
+export const clientProfileSchema = userProfileSchema.extend({
+  userType: z.enum([UserType.CLIENT, UserType.GUEST]),
+  emergencyContact: z.object({
+    name: z.string().min(2, 'Nombre del contacto de emergencia requerido'),
+    relationship: z.string().min(2, 'Relación con el contacto requerida'),
+    phone: z.string()
+      .min(10, 'Teléfono debe tener al menos 10 dígitos')
+      .regex(/^[\+]?[1-9][\d]{0,15}$/, 'Formato de teléfono inválido'),
+    email: z.string().email('Email inválido').optional()
+  }).optional(),
+  travelPreferences: z.object({
+    accommodationType: z.array(z.string()).optional(),
+    priceRange: z.object({
+      min: z.number().min(0, 'Precio mínimo debe ser positivo'),
+      max: z.number().min(0, 'Precio máximo debe ser positivo'),
+      currency: z.string().length(3, 'Código de moneda inválido')
+    }),
+    amenities: z.array(z.string()).optional(),
+    maxGuests: z.number().min(1, 'Mínimo 1 huésped').max(20, 'Máximo 20 huéspedes'),
+    smokingAllowed: z.boolean(),
+    petsAllowed: z.boolean()
+  }).optional(),
+  identityVerification: z.object({
+    documentType: z.nativeEnum(DocumentType),
+    documentNumber: z.string().min(8, 'Número de documento inválido'),
+    isVerified: z.boolean().default(false),
+    verifiedAt: z.date().optional()
+  }).optional()
+});
+
+// Esquema para criterios de calificación
+export const ratingCriteriaSchema = z.object({
+  cleanliness: z.number().min(1, 'Mínimo 1 estrella').max(5, 'Máximo 5 estrellas'),
+  accuracy: z.number().min(1, 'Mínimo 1 estrella').max(5, 'Máximo 5 estrellas'),
+  communication: z.number().min(1, 'Mínimo 1 estrella').max(5, 'Máximo 5 estrellas'),
+  location: z.number().min(1, 'Mínimo 1 estrella').max(5, 'Máximo 5 estrellas'),
+  checkIn: z.number().min(1, 'Mínimo 1 estrella').max(5, 'Máximo 5 estrellas'),
+  value: z.number().min(1, 'Mínimo 1 estrella').max(5, 'Máximo 5 estrellas')
+});
+
+// Esquema para crear reseña
+export const createReviewSchema = z.object({
+  reviewType: z.nativeEnum(ReviewType, {
+    errorMap: () => ({ message: 'Tipo de reseña inválido' })
+  }),
+  targetId: z.string().min(1, 'ID del objetivo requerido'),
+  rating: z.number().min(1, 'Mínimo 1 estrella').max(5, 'Máximo 5 estrellas'),
+  criteria: ratingCriteriaSchema.optional(),
+  title: z.string()
+    .min(5, 'Título debe tener al menos 5 caracteres')
+    .max(100, 'Título no puede exceder 100 caracteres')
+    .optional(),
+  comment: z.string()
+    .min(10, 'Comentario debe tener al menos 10 caracteres')
+    .max(1000, 'Comentario no puede exceder 1000 caracteres'),
+  pros: z.array(z.string().min(1, 'Aspecto positivo inválido'))
+    .max(5, 'Máximo 5 aspectos positivos')
+    .optional(),
+  cons: z.array(z.string().min(1, 'Aspecto negativo inválido'))
+    .max(5, 'Máximo 5 aspectos negativos')
+    .optional(),
+  photos: z.array(z.string().url('URL de foto inválida'))
+    .max(10, 'Máximo 10 fotos')
+    .optional(),
+  bookingId: z.string().optional(),
+  stayDate: z.date().optional(),
+  isAnonymous: z.boolean().default(false)
+});
+
+// Esquema para actualizar reseña
+export const updateReviewSchema = z.object({
+  rating: z.number().min(1, 'Mínimo 1 estrella').max(5, 'Máximo 5 estrellas').optional(),
+  criteria: ratingCriteriaSchema.optional(),
+  title: z.string()
+    .min(5, 'Título debe tener al menos 5 caracteres')
+    .max(100, 'Título no puede exceder 100 caracteres')
+    .optional(),
+  comment: z.string()
+    .min(10, 'Comentario debe tener al menos 10 caracteres')
+    .max(1000, 'Comentario no puede exceder 1000 caracteres')
+    .optional(),
+  pros: z.array(z.string().min(1, 'Aspecto positivo inválido'))
+    .max(5, 'Máximo 5 aspectos positivos')
+    .optional(),
+  cons: z.array(z.string().min(1, 'Aspecto negativo inválido'))
+    .max(5, 'Máximo 5 aspectos negativos')
+    .optional(),
+  photos: z.array(z.string().url('URL de foto inválida'))
+    .max(10, 'Máximo 10 fotos')
+    .optional()
+});
+
+// Esquema para reportar reseña
+export const reportReviewSchema = z.object({
+  reviewId: z.string().min(1, 'ID de reseña requerido'),
+  reason: z.nativeEnum(ReportReason, {
+    errorMap: () => ({ message: 'Motivo de reporte inválido' })
+  }),
+  description: z.string()
+    .min(10, 'Descripción debe tener al menos 10 caracteres')
+    .max(500, 'Descripción no puede exceder 500 caracteres')
+    .optional()
+});
+
+// Esquema para responder a reseña
+export const reviewResponseSchema = z.object({
+  reviewId: z.string().min(1, 'ID de reseña requerido'),
+  response: z.string()
+    .min(10, 'Respuesta debe tener al menos 10 caracteres')
+    .max(500, 'Respuesta no puede exceder 500 caracteres'),
+  isOfficial: z.boolean().default(false)
+});
+
+// Esquema para filtros de reseñas
+export const reviewFiltersSchema = z.object({
+  rating: z.array(z.number().min(1).max(5)).optional(),
+  dateRange: z.object({
+    start: z.date(),
+    end: z.date()
+  }).optional(),
+  reviewType: z.array(z.nativeEnum(ReviewType)).optional(),
+  verified: z.boolean().optional(),
+  withPhotos: z.boolean().optional(),
+  language: z.string().min(2, 'Código de idioma inválido').optional(),
+  sortBy: z.enum(['newest', 'oldest', 'highest_rating', 'lowest_rating', 'most_helpful'], {
+    errorMap: () => ({ message: 'Criterio de ordenamiento inválido' })
+  }).optional()
+});
+
+// Esquema para acción de moderación
+export const moderationActionSchema = z.object({
+  reviewId: z.string().min(1, 'ID de reseña requerido'),
+  action: z.enum(['approve', 'reject', 'flag', 'edit', 'hide', 'warn_user'], {
+    errorMap: () => ({ message: 'Acción de moderación inválida' })
+  }),
+  reason: z.string()
+    .min(5, 'Motivo debe tener al menos 5 caracteres')
+    .max(200, 'Motivo no puede exceder 200 caracteres')
+    .optional(),
+  notes: z.string()
+    .max(500, 'Notas no pueden exceder 500 caracteres')
+    .optional(),
+  editedContent: z.string()
+    .min(10, 'Contenido editado debe tener al menos 10 caracteres')
+    .max(1000, 'Contenido editado no puede exceder 1000 caracteres')
+    .optional()
+});
+
+// Esquema para configuración de moderación
+export const moderationSettingsSchema = z.object({
+  autoApprove: z.boolean(),
+  requireVerifiedBooking: z.boolean(),
+  minimumStayDuration: z.number().min(1, 'Duración mínima debe ser al menos 1 hora'),
+  profanityFilter: z.boolean(),
+  spamDetection: z.boolean(),
+  duplicateDetection: z.boolean(),
+  reviewCooldown: z.number().min(0, 'Período de espera debe ser positivo'),
+  allowAnonymous: z.boolean(),
+  allowPhotos: z.boolean(),
+  maxPhotosPerReview: z.number().min(1).max(20),
+  moderatorNotifications: z.boolean()
+});
+
+// Esquemas agrupados para perfiles y reseñas
+export const profileReviewSchemas = {
+  // Perfiles
+  userProfile: userProfileSchema,
+  agentProfile: agentProfileSchema,
+  ownerProfile: ownerProfileSchema,
+  clientProfile: clientProfileSchema,
+  contactInfo: contactInfoSchema,
+  address: addressSchema,
+  userPreferences: userPreferencesSchema,
+  certification: certificationSchema,
+  verificationDocument: verificationDocumentSchema,
+  
+  // Reseñas
+  createReview: createReviewSchema,
+  updateReview: updateReviewSchema,
+  reportReview: reportReviewSchema,
+  reviewResponse: reviewResponseSchema,
+  reviewFilters: reviewFiltersSchema,
+  ratingCriteria: ratingCriteriaSchema,
+  
+  // Moderación
+  moderationAction: moderationActionSchema,
+  moderationSettings: moderationSettingsSchema
+};
+
+// Tipos inferidos para perfiles y reseñas
+export type UserProfileInput = z.infer<typeof userProfileSchema>;
+export type AgentProfileInput = z.infer<typeof agentProfileSchema>;
+export type OwnerProfileInput = z.infer<typeof ownerProfileSchema>;
+export type ClientProfileInput = z.infer<typeof clientProfileSchema>;
+export type ContactInfoInput = z.infer<typeof contactInfoSchema>;
+export type AddressInput = z.infer<typeof addressSchema>;
+export type UserPreferencesInput = z.infer<typeof userPreferencesSchema>;
+export type CertificationInput = z.infer<typeof certificationSchema>;
+export type VerificationDocumentInput = z.infer<typeof verificationDocumentSchema>;
+
+export type CreateReviewInput = z.infer<typeof createReviewSchema>;
+export type UpdateReviewInput = z.infer<typeof updateReviewSchema>;
+export type ReportReviewInput = z.infer<typeof reportReviewSchema>;
+export type ReviewResponseInput = z.infer<typeof reviewResponseSchema>;
+export type ReviewFiltersInput = z.infer<typeof reviewFiltersSchema>;
+export type RatingCriteriaInput = z.infer<typeof ratingCriteriaSchema>;
+
+export type ModerationActionInput = z.infer<typeof moderationActionSchema>;
+export type ModerationSettingsInput = z.infer<typeof moderationSettingsSchema>;
 
 export default rentalSchemas;
