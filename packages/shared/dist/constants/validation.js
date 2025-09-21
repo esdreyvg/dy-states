@@ -62,6 +62,28 @@ export const VALIDATION_RULES = {
         MAX: new Date().getFullYear() + 5,
     },
 };
+// User Role Constants
+export const USER_ROLES = {
+    ADMIN: 'admin',
+    AGENT: 'agent',
+    OWNER: 'owner',
+    CLIENT: 'client',
+    INVESTOR: 'investor',
+};
+export const ROLE_DISPLAY_NAMES = {
+    [USER_ROLES.ADMIN]: 'Administrador',
+    [USER_ROLES.AGENT]: 'Agente',
+    [USER_ROLES.OWNER]: 'Propietario',
+    [USER_ROLES.CLIENT]: 'Cliente',
+    [USER_ROLES.INVESTOR]: 'Inversionista',
+};
+export const ROLE_DESCRIPTIONS = {
+    [USER_ROLES.ADMIN]: 'Acceso completo al sistema',
+    [USER_ROLES.AGENT]: 'Gestión de propiedades y clientes',
+    [USER_ROLES.OWNER]: 'Gestión de propiedades propias',
+    [USER_ROLES.CLIENT]: 'Búsqueda y consulta de propiedades',
+    [USER_ROLES.INVESTOR]: 'Análisis de inversiones inmobiliarias',
+};
 // Validation Messages
 export const VALIDATION_MESSAGES = {
     REQUIRED: 'Este campo es requerido',

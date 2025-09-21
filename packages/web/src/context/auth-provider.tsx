@@ -92,14 +92,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       const response = await authService.login(credentials);
       
-      // Store only the token for now
-      tokenStorage.setToken(response.token);
+      // Store the tokens
+      tokenStorage.setToken(response.accessToken);
 
       setState({
         isAuthenticated: true,
         user: {
           ...response.user,
-          permissions: [], // Default empty permissions array
+          permissions: response.user.permissions || [], // Use response permissions or default empty
         },
         tokens: null, // Simplified for now
         isLoading: false,
@@ -177,7 +177,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.refreshToken();
       
       // Store basic token
-      tokenStorage.setToken(response.token);
+      tokenStorage.setToken(response.accessToken);
 
       setState((prev: AuthState) => ({
         ...prev,

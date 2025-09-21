@@ -6,7 +6,7 @@ export declare const UserSchema: z.ZodObject<{
     lastName: z.ZodString;
     phone: z.ZodOptional<z.ZodString>;
     avatar: z.ZodOptional<z.ZodString>;
-    role: z.ZodEnum<["buyer", "seller", "agent", "admin"]>;
+    role: z.ZodEnum<["admin", "agent", "owner", "client", "investor"]>;
     preferences: z.ZodOptional<z.ZodObject<{
         language: z.ZodDefault<z.ZodEnum<["en", "es"]>>;
         currency: z.ZodDefault<z.ZodEnum<["USD", "DOP"]>>;
@@ -51,34 +51,34 @@ export declare const UserSchema: z.ZodObject<{
             twitter: z.ZodOptional<z.ZodString>;
         }, "strip", z.ZodTypeAny, {
             facebook?: string | undefined;
-            instagram?: string | undefined;
-            linkedin?: string | undefined;
             twitter?: string | undefined;
+            linkedin?: string | undefined;
+            instagram?: string | undefined;
         }, {
             facebook?: string | undefined;
-            instagram?: string | undefined;
-            linkedin?: string | undefined;
             twitter?: string | undefined;
+            linkedin?: string | undefined;
+            instagram?: string | undefined;
         }>>;
     }, "strip", z.ZodTypeAny, {
         company?: string | undefined;
-        bio?: string | undefined;
         website?: string | undefined;
+        bio?: string | undefined;
         socialLinks?: {
             facebook?: string | undefined;
-            instagram?: string | undefined;
-            linkedin?: string | undefined;
             twitter?: string | undefined;
+            linkedin?: string | undefined;
+            instagram?: string | undefined;
         } | undefined;
     }, {
         company?: string | undefined;
-        bio?: string | undefined;
         website?: string | undefined;
+        bio?: string | undefined;
         socialLinks?: {
             facebook?: string | undefined;
-            instagram?: string | undefined;
-            linkedin?: string | undefined;
             twitter?: string | undefined;
+            linkedin?: string | undefined;
+            instagram?: string | undefined;
         } | undefined;
     }>>;
     isVerified: z.ZodDefault<z.ZodBoolean>;
@@ -90,7 +90,7 @@ export declare const UserSchema: z.ZodObject<{
     email: string;
     firstName: string;
     lastName: string;
-    role: "admin" | "agent" | "buyer" | "seller";
+    role: "agent" | "owner" | "client" | "investor" | "admin";
     createdAt: string;
     updatedAt: string;
     isActive: boolean;
@@ -108,13 +108,13 @@ export declare const UserSchema: z.ZodObject<{
     } | undefined;
     profile?: {
         company?: string | undefined;
-        bio?: string | undefined;
         website?: string | undefined;
+        bio?: string | undefined;
         socialLinks?: {
             facebook?: string | undefined;
-            instagram?: string | undefined;
-            linkedin?: string | undefined;
             twitter?: string | undefined;
+            linkedin?: string | undefined;
+            instagram?: string | undefined;
         } | undefined;
     } | undefined;
 }, {
@@ -122,7 +122,7 @@ export declare const UserSchema: z.ZodObject<{
     email: string;
     firstName: string;
     lastName: string;
-    role: "admin" | "agent" | "buyer" | "seller";
+    role: "agent" | "owner" | "client" | "investor" | "admin";
     createdAt: string;
     updatedAt: string;
     phone?: string | undefined;
@@ -137,18 +137,18 @@ export declare const UserSchema: z.ZodObject<{
         } | undefined;
     } | undefined;
     isActive?: boolean | undefined;
+    isVerified?: boolean | undefined;
     profile?: {
         company?: string | undefined;
-        bio?: string | undefined;
         website?: string | undefined;
+        bio?: string | undefined;
         socialLinks?: {
             facebook?: string | undefined;
-            instagram?: string | undefined;
-            linkedin?: string | undefined;
             twitter?: string | undefined;
+            linkedin?: string | undefined;
+            instagram?: string | undefined;
         } | undefined;
     } | undefined;
-    isVerified?: boolean | undefined;
 }>;
 export declare const LoginSchema: z.ZodObject<{
     email: z.ZodString;
@@ -170,14 +170,14 @@ export declare const RegisterSchema: z.ZodEffects<z.ZodObject<{
     firstName: z.ZodString;
     lastName: z.ZodString;
     phone: z.ZodOptional<z.ZodString>;
-    role: z.ZodDefault<z.ZodEnum<["buyer", "seller", "agent"]>>;
+    role: z.ZodDefault<z.ZodEnum<["agent", "owner", "client", "investor"]>>;
     termsAccepted: z.ZodEffects<z.ZodBoolean, boolean, boolean>;
 }, "strip", z.ZodTypeAny, {
     password: string;
     email: string;
     firstName: string;
     lastName: string;
-    role: "agent" | "buyer" | "seller";
+    role: "agent" | "owner" | "client" | "investor";
     confirmPassword: string;
     termsAccepted: boolean;
     phone?: string | undefined;
@@ -189,13 +189,13 @@ export declare const RegisterSchema: z.ZodEffects<z.ZodObject<{
     confirmPassword: string;
     termsAccepted: boolean;
     phone?: string | undefined;
-    role?: "agent" | "buyer" | "seller" | undefined;
+    role?: "agent" | "owner" | "client" | "investor" | undefined;
 }>, {
     password: string;
     email: string;
     firstName: string;
     lastName: string;
-    role: "agent" | "buyer" | "seller";
+    role: "agent" | "owner" | "client" | "investor";
     confirmPassword: string;
     termsAccepted: boolean;
     phone?: string | undefined;
@@ -207,7 +207,7 @@ export declare const RegisterSchema: z.ZodEffects<z.ZodObject<{
     confirmPassword: string;
     termsAccepted: boolean;
     phone?: string | undefined;
-    role?: "agent" | "buyer" | "seller" | undefined;
+    role?: "agent" | "owner" | "client" | "investor" | undefined;
 }>;
 export type User = z.infer<typeof UserSchema>;
 export type LoginRequest = z.infer<typeof LoginSchema>;

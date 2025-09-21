@@ -15,15 +15,20 @@ export interface LoginResponse {
         firstName: string;
         lastName: string;
         role: string;
+        permissions: string[];
+        emailVerified: boolean;
+        avatar?: string;
     };
     tokens: AuthTokens;
 }
 export interface RegisterRequest {
     email: string;
     password: string;
+    confirmPassword: string;
     firstName: string;
     lastName: string;
     phone?: string;
+    role?: 'agent' | 'owner' | 'client' | 'investor';
     acceptTerms: boolean;
 }
 export interface RegisterResponse {

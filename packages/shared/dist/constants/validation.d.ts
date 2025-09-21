@@ -61,6 +61,27 @@ export declare const VALIDATION_RULES: {
         readonly MAX: number;
     };
 };
+export declare const USER_ROLES: {
+    readonly ADMIN: "admin";
+    readonly AGENT: "agent";
+    readonly OWNER: "owner";
+    readonly CLIENT: "client";
+    readonly INVESTOR: "investor";
+};
+export declare const ROLE_DISPLAY_NAMES: {
+    readonly admin: "Administrador";
+    readonly agent: "Agente";
+    readonly owner: "Propietario";
+    readonly client: "Cliente";
+    readonly investor: "Inversionista";
+};
+export declare const ROLE_DESCRIPTIONS: {
+    readonly admin: "Acceso completo al sistema";
+    readonly agent: "Gestión de propiedades y clientes";
+    readonly owner: "Gestión de propiedades propias";
+    readonly client: "Búsqueda y consulta de propiedades";
+    readonly investor: "Análisis de inversiones inmobiliarias";
+};
 export declare const VALIDATION_MESSAGES: {
     readonly REQUIRED: "Este campo es requerido";
     readonly EMAIL_INVALID: "Ingrese un email válido";

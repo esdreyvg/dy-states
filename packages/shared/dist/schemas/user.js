@@ -6,7 +6,7 @@ export const UserSchema = z.object({
     lastName: z.string().min(1, 'Last name is required'),
     phone: z.string().optional(),
     avatar: z.string().url().optional(),
-    role: z.enum(['buyer', 'seller', 'agent', 'admin']),
+    role: z.enum(['admin', 'agent', 'owner', 'client', 'investor']),
     preferences: z.object({
         language: z.enum(['en', 'es']).default('es'),
         currency: z.enum(['USD', 'DOP']).default('USD'),
@@ -44,7 +44,7 @@ export const RegisterSchema = z.object({
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
     phone: z.string().optional(),
-    role: z.enum(['buyer', 'seller', 'agent']).default('buyer'),
+    role: z.enum(['agent', 'owner', 'client', 'investor']).default('client'),
     termsAccepted: z.boolean().refine((val) => val === true, {
         message: 'You must accept the terms and conditions',
     }),

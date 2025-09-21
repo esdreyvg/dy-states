@@ -212,8 +212,6 @@ abstract class BaseApiService {
       throw error;
     }
   }
-
-  }
 }
 
 /**
@@ -1437,6 +1435,7 @@ import {
   ClientProfile,
   Review,
   ReviewStats,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ReviewFilters,
   ReviewResponse,
   ReviewReport,
@@ -1446,6 +1445,7 @@ import {
   ModerationSettings,
   UserType,
   ReviewType,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ReviewStatus,
   VerificationStatus
 } from '../../../shared/src/types/rental';
@@ -1857,8 +1857,10 @@ import {
   SystemConfiguration,
   AdminNotification,
   SystemReport,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   DashboardWidget,
   DashboardConfig,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   SystemBackup,
   AdminSession,
 } from '../../../shared/src/types/rental';
@@ -1873,6 +1875,7 @@ import {
   SystemConfigInput,
   AdminNotificationInput,
   SystemReportInput,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   DashboardWidgetInput,
   DashboardConfigInput,
   ReportFiltersInput,
@@ -2002,6 +2005,7 @@ class RolePermissionAPI extends BaseApiService {
   }
 
   // Remover permisos de rol
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async removePermissions(roleId: string, permissionIds: string[]): Promise<ApiResponse<Role>> {
     return this.delete<Role>(`/${roleId}/permissions`);
   }

@@ -30,8 +30,7 @@ const exampleAdminUser: AdminUser = {
   position: 'Administrador del Sistema',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date(),
-  createdBy: 'system',
-  lastModifiedBy: 'system'
+  createdBy: 'system'
 };
 
 const AdminPage: React.FC = () => {
