@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, Eye } from 'lucide-react';
-import type { VirtualTour, VirtualTourType } from '@dy-estates/shared/src/types/property';
+import type { VirtualTour } from '@dy-estates/shared/src/types/property';
 
 interface VirtualTourProps {
   tour: VirtualTour;
