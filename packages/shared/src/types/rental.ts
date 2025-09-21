@@ -647,20 +647,52 @@ export interface RentalNotification {
 }
 
 export enum NotificationType {
+  // Reservas y bookings
   NEW_BOOKING = 'new_booking',
   BOOKING_CONFIRMED = 'booking_confirmed',
   BOOKING_CANCELLED = 'booking_cancelled',
   BOOKING_MODIFIED = 'booking_modified',
-  PAYMENT_RECEIVED = 'payment_received',
-  PAYMENT_FAILED = 'payment_failed',
+  BOOKING_REQUEST = 'booking_request',
+  BOOKING_REMINDER = 'booking_reminder',
   CHECK_IN_REMINDER = 'check_in_reminder',
   CHECK_OUT_REMINDER = 'check_out_reminder',
+  
+  // Pagos y finanzas
+  PAYMENT_RECEIVED = 'payment_received',
+  PAYMENT_FAILED = 'payment_failed',
+  PAYMENT_REMINDER = 'payment_reminder',
+  REFUND_PROCESSED = 'refund_processed',
+  
+  // Mensajes y comunicación
   NEW_MESSAGE = 'new_message',
+  MESSAGE_REPLY = 'message_reply',
+  CHAT_MENTION = 'chat_mention',
+  
+  // Propiedades
+  PROPERTY_APPROVED = 'property_approved',
+  PROPERTY_REJECTED = 'property_rejected',
+  PROPERTY_UPDATED = 'property_updated',
+  PROPERTY_INQUIRY = 'property_inquiry',
+  PROPERTY_REVIEW = 'property_review',
   NEW_REVIEW = 'new_review',
   CALENDAR_UPDATED = 'calendar_updated',
   PRICE_UPDATED = 'price_updated',
   MAINTENANCE_SCHEDULED = 'maintenance_scheduled',
+  
+  // Sistema y seguridad
+  ACCOUNT_VERIFIED = 'account_verified',
+  PASSWORD_CHANGED = 'password_changed',
+  LOGIN_SUSPICIOUS = 'login_suspicious',
+  ACCOUNT_LOCKED = 'account_locked',
   SYSTEM_ALERT = 'system_alert',
+  SYSTEM_MAINTENANCE = 'system_maintenance',
+  FEATURE_UPDATE = 'feature_update',
+  
+  // Promociones y marketing
+  PROMOTIONAL_OFFER = 'promotional_offer',
+  SEASONAL_DISCOUNT = 'seasonal_discount',
+  NEWSLETTER_UPDATE = 'newsletter_update',
+  GENERAL_ANNOUNCEMENT = 'general_announcement'
 }
 
 export interface NotificationData {
@@ -683,6 +715,7 @@ export enum NotificationChannel {
   SMS = 'sms',
   PUSH = 'push',
   IN_APP = 'in_app',
+  WEB = 'web',
   WHATSAPP = 'whatsapp',
 }
 
@@ -692,6 +725,7 @@ export enum NotificationStatus {
   DELIVERED = 'delivered',
   READ = 'read',
   FAILED = 'failed',
+  EXPIRED = 'expired'
 }
 
 export enum NotificationPriority {
@@ -699,6 +733,7 @@ export enum NotificationPriority {
   NORMAL = 'normal',
   HIGH = 'high',
   URGENT = 'urgent',
+  CRITICAL = 'critical'
 }
 
 // DTOs para operaciones API
@@ -2099,4 +2134,408 @@ export interface SystemBackup {
     timestamp: Date;
     description: string;
   }>;
+}
+
+// ============================================================================
+// SISTEMA DE NOTIFICACIONES Y MÓVIL
+// ============================================================================
+
+// Plataformas de dispositivos
+export enum DevicePlatform {
+  WEB = 'web',
+  IOS = 'ios',
+  ANDROID = 'android',
+  WINDOWS = 'windows',
+  MACOS = 'macos'
+}
+
+// Interfaz principal de notificación
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  channel: NotificationChannel;
+  priority: NotificationPriority;
+  status: NotificationStatus;
+  
+  // Metadatos
+  data?: Record<string, unknown>;
+  imageUrl?: string;
+  actionUrl?: string;
+  deepLink?: string;
+  
+  // Configuración de entrega
+  scheduledFor?: Date;
+  expiresAt?: Date;
+  retryCount: number;
+  maxRetries: number;
+  
+  // Rastreo
+  sentAt?: Date;
+  deliveredAt?: Date;
+  readAt?: Date;
+  clickedAt?: Date;
+  
+  // Contexto
+  sourceId?: string;
+  sourceType?: string; // 'booking', 'property', 'message', etc.
+  relatedEntityId?: string;
+  
+  // Auditoría
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+}
+
+// Push notification específica
+export interface PushNotification {
+  id: string;
+  notificationId: string;
+  deviceToken: string;
+  platform: DevicePlatform;
+  
+  // Configuración push
+  badge?: number;
+  sound?: string;
+  category?: string;
+  threadId?: string;
+  
+  // Estado de entrega
+  sentAt?: Date;
+  deliveredAt?: Date;
+  failureReason?: string;
+  
+  // Payload específico de la plataforma
+  iosPayload?: {
+    alert: {
+      title: string;
+      body: string;
+      subtitle?: string;
+    };
+    badge?: number;
+    sound?: string;
+    'mutable-content'?: number;
+    'content-available'?: number;
+    category?: string;
+    'thread-id'?: string;
+  };
+  
+  androidPayload?: {
+    notification: {
+      title: string;
+      body: string;
+      icon?: string;
+      color?: string;
+      sound?: string;
+      tag?: string;
+      click_action?: string;
+    };
+    data?: Record<string, string>;
+    priority?: 'normal' | 'high';
+    time_to_live?: number;
+  };
+  
+  webPayload?: {
+    title: string;
+    body: string;
+    icon?: string;
+    image?: string;
+    badge?: string;
+    tag?: string;
+    data?: Record<string, unknown>;
+    actions?: Array<{
+      action: string;
+      title: string;
+      icon?: string;
+    }>;
+  };
+}
+
+// Dispositivo registrado para notificaciones
+export interface UserDevice {
+  id: string;
+  userId: string;
+  deviceToken: string;
+  platform: DevicePlatform;
+  deviceId: string;
+  deviceName: string;
+  appVersion: string;
+  osVersion: string;
+  
+  // Estado
+  isActive: boolean;
+  lastSeenAt: Date;
+  notificationsEnabled: boolean;
+  
+  // Configuración push
+  pushSettings: {
+    soundEnabled: boolean;
+    vibrateEnabled: boolean;
+    badgeEnabled: boolean;
+    alertStyle: 'banner' | 'alert' | 'none';
+  };
+  
+  // Metadatos
+  timezone: string;
+  language: string;
+  
+  // Auditoría
+  registeredAt: Date;
+  updatedAt: Date;
+}
+
+// Preferencias de notificación por usuario
+export interface UserNotificationPreferences {
+  id: string;
+  userId: string;
+  
+  // Configuración general
+  globalEnabled: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursStart: string; // HH:MM
+  quietHoursEnd: string; // HH:MM
+  timezone: string;
+  
+  // Preferencias por tipo de notificación
+  typePreferences: {
+    [key in NotificationType]: {
+      enabled: boolean;
+      channels: NotificationChannel[];
+      priority: NotificationPriority;
+      frequency: 'immediate' | 'hourly' | 'daily' | 'weekly';
+      soundEnabled: boolean;
+    };
+  };
+  
+  // Preferencias por canal
+  channelPreferences: {
+    [key in NotificationChannel]: {
+      enabled: boolean;
+      maxDailyLimit?: number;
+      minIntervalMinutes?: number;
+    };
+  };
+  
+  // Filtros avanzados
+  filters: {
+    mutedUsers: string[];
+    mutedProperties: string[];
+    mutedKeywords: string[];
+    priorityThreshold: NotificationPriority;
+  };
+  
+  // Auditoría
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Template de notificación
+export interface NotificationTemplate {
+  id: string;
+  type: NotificationType;
+  name: string;
+  description?: string;
+  
+  // Templates por idioma
+  templates: {
+    [language: string]: {
+      title: string;
+      message: string;
+      emailSubject?: string;
+      emailBody?: string;
+      smsText?: string;
+    };
+  };
+  
+  // Configuración
+  defaultChannel: NotificationChannel;
+  defaultPriority: NotificationPriority;
+  expirationHours?: number;
+  maxRetries?: number;
+  
+  // Variables disponibles
+  variables: Array<{
+    name: string;
+    type: 'string' | 'number' | 'date' | 'boolean';
+    required: boolean;
+    description: string;
+  }>;
+  
+  // Estado
+  isActive: boolean;
+  version: number;
+  
+  // Auditoría
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+  lastModifiedBy: string;
+}
+
+// Estadísticas de notificaciones
+export interface NotificationStats {
+  userId?: string;
+  dateRange: {
+    from: Date;
+    to: Date;
+  };
+  
+  // Métricas generales
+  totalSent: number;
+  totalDelivered: number;
+  totalRead: number;
+  totalClicked: number;
+  totalFailed: number;
+  
+  // Por canal
+  byChannel: {
+    [key in NotificationChannel]: {
+      sent: number;
+      delivered: number;
+      read: number;
+      clicked: number;
+      failed: number;
+    };
+  };
+  
+  // Por tipo
+  byType: {
+    [key in NotificationType]: {
+      sent: number;
+      delivered: number;
+      read: number;
+      clicked: number;
+      failed: number;
+    };
+  };
+  
+  // Por plataforma
+  byPlatform: {
+    [key in DevicePlatform]: {
+      sent: number;
+      delivered: number;
+      read: number;
+      clicked: number;
+      failed: number;
+    };
+  };
+  
+  // Métricas de tiempo
+  avgDeliveryTime: number; // milliseconds
+  avgReadTime: number; // milliseconds
+  avgClickTime: number; // milliseconds
+  
+  // Tasas de conversión
+  deliveryRate: number; // percentage
+  readRate: number; // percentage
+  clickRate: number; // percentage
+  failureRate: number; // percentage
+  
+  // Mejores y peores tiempos
+  bestDeliveryHour: number;
+  worstDeliveryHour: number;
+  bestDeliveryDay: string;
+  worstDeliveryDay: string;
+}
+
+// Configuración del sistema de notificaciones
+export interface NotificationSystemConfig {
+  id: string;
+  
+  // Configuración de proveedores
+  providers: {
+    push: {
+      firebase: {
+        enabled: boolean;
+        serverKey: string;
+        senderId: string;
+      };
+      apns: {
+        enabled: boolean;
+        keyId: string;
+        teamId: string;
+        bundleId: string;
+        certPath: string;
+      };
+    };
+    
+    email: {
+      smtp: {
+        enabled: boolean;
+        host: string;
+        port: number;
+        secure: boolean;
+        user: string;
+        password: string;
+      };
+      sendgrid: {
+        enabled: boolean;
+        apiKey: string;
+      };
+    };
+    
+    sms: {
+      twilio: {
+        enabled: boolean;
+        accountSid: string;
+        authToken: string;
+        fromNumber: string;
+      };
+    };
+    
+    whatsapp: {
+      twilio: {
+        enabled: boolean;
+        accountSid: string;
+        authToken: string;
+        fromNumber: string;
+      };
+    };
+  };
+  
+  // Límites y configuración
+  rateLimits: {
+    perUser: {
+      hourly: number;
+      daily: number;
+      monthly: number;
+    };
+    global: {
+      perSecond: number;
+      perMinute: number;
+      perHour: number;
+    };
+  };
+  
+  // Configuración de retry
+  retryConfig: {
+    maxRetries: number;
+    initialDelay: number; // milliseconds
+    backoffMultiplier: number;
+    maxDelay: number; // milliseconds
+  };
+  
+  // Configuración de cleanup
+  cleanupConfig: {
+    deleteReadAfterDays: number;
+    deleteUnreadAfterDays: number;
+    deleteFailedAfterDays: number;
+    archiveAfterDays: number;
+  };
+  
+  // Configuración de features
+  features: {
+    batchingEnabled: boolean;
+    schedulingEnabled: boolean;
+    templatingEnabled: boolean;
+    analyticsEnabled: boolean;
+    a11yEnabled: boolean;
+  };
+  
+  // Auditoría
+  createdAt: Date;
+  updatedAt: Date;
+  lastModifiedBy: string;
 }

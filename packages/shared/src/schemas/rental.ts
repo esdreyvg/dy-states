@@ -16,7 +16,9 @@ import {
   MessageType,
   NotificationType,
   NotificationChannel,
+  NotificationStatus,
   NotificationPriority,
+  DevicePlatform,
   AmenityCategory,
   TransportationType,
   AttractionType,
@@ -1650,5 +1652,360 @@ export type SystemReportInput = z.infer<typeof systemReportSchema>;
 export type DashboardWidgetInput = z.infer<typeof dashboardWidgetSchema>;
 export type DashboardConfigInput = z.infer<typeof dashboardConfigSchema>;
 export type ReportFiltersInput = z.infer<typeof reportFiltersSchema>;
+
+// ============================================================================
+// ESQUEMAS DE NOTIFICACIONES Y MÓVIL
+// ============================================================================
+
+// Validación de notificación
+export const notificationSchema = z.object({
+  userId: z.string().min(1, 'ID de usuario requerido'),
+  type: z.nativeEnum(NotificationType, {
+    errorMap: () => ({ message: 'Tipo de notificación inválido' })
+  }),
+  title: z.string()
+    .min(1, 'Título requerido')
+    .max(100, 'Título no puede exceder 100 caracteres'),
+  message: z.string()
+    .min(1, 'Mensaje requerido')
+    .max(500, 'Mensaje no puede exceder 500 caracteres'),
+  channel: z.nativeEnum(NotificationChannel, {
+    errorMap: () => ({ message: 'Canal de notificación inválido' })
+  }),
+  priority: z.nativeEnum(NotificationPriority, {
+    errorMap: () => ({ message: 'Prioridad inválida' })
+  }).default(NotificationPriority.NORMAL),
+  
+  // Metadatos opcionales
+  data: z.record(z.unknown()).optional(),
+  imageUrl: z.string().url('URL de imagen inválida').optional(),
+  actionUrl: z.string().url('URL de acción inválida').optional(),
+  deepLink: z.string().optional(),
+  
+  // Configuración de entrega
+  scheduledFor: z.coerce.date().optional(),
+  expiresAt: z.coerce.date().optional(),
+  maxRetries: z.number()
+    .min(0, 'Reintentos no puede ser negativo')
+    .max(10, 'Máximo 10 reintentos')
+    .default(3),
+    
+  // Contexto
+  sourceId: z.string().optional(),
+  sourceType: z.string().optional(),
+  relatedEntityId: z.string().optional()
+});
+
+// Validación de push notification
+export const pushNotificationSchema = z.object({
+  notificationId: z.string().min(1, 'ID de notificación requerido'),
+  deviceToken: z.string().min(1, 'Token de dispositivo requerido'),
+  platform: z.nativeEnum(DevicePlatform, {
+    errorMap: () => ({ message: 'Plataforma inválida' })
+  }),
+  
+  // Configuración push
+  badge: z.number().min(0, 'Badge no puede ser negativo').optional(),
+  sound: z.string().optional(),
+  category: z.string().optional(),
+  threadId: z.string().optional(),
+  
+  // Payloads específicos por plataforma
+  iosPayload: z.object({
+    alert: z.object({
+      title: z.string().min(1, 'Título requerido'),
+      body: z.string().min(1, 'Cuerpo requerido'),
+      subtitle: z.string().optional()
+    }),
+    badge: z.number().min(0).optional(),
+    sound: z.string().optional(),
+    'mutable-content': z.number().optional(),
+    'content-available': z.number().optional(),
+    category: z.string().optional(),
+    'thread-id': z.string().optional()
+  }).optional(),
+  
+  androidPayload: z.object({
+    notification: z.object({
+      title: z.string().min(1, 'Título requerido'),
+      body: z.string().min(1, 'Cuerpo requerido'),
+      icon: z.string().optional(),
+      color: z.string().optional(),
+      sound: z.string().optional(),
+      tag: z.string().optional(),
+      click_action: z.string().optional()
+    }),
+    data: z.record(z.string()).optional(),
+    priority: z.enum(['normal', 'high']).optional(),
+    time_to_live: z.number().min(0).optional()
+  }).optional(),
+  
+  webPayload: z.object({
+    title: z.string().min(1, 'Título requerido'),
+    body: z.string().min(1, 'Cuerpo requerido'),
+    icon: z.string().url('URL de icono inválida').optional(),
+    image: z.string().url('URL de imagen inválida').optional(),
+    badge: z.string().url('URL de badge inválida').optional(),
+    tag: z.string().optional(),
+    data: z.record(z.unknown()).optional(),
+    actions: z.array(z.object({
+      action: z.string().min(1, 'Acción requerida'),
+      title: z.string().min(1, 'Título de acción requerido'),
+      icon: z.string().url('URL de icono inválida').optional()
+    })).optional()
+  }).optional()
+});
+
+// Validación de dispositivo de usuario
+export const userDeviceSchema = z.object({
+  userId: z.string().min(1, 'ID de usuario requerido'),
+  deviceToken: z.string().min(1, 'Token de dispositivo requerido'),
+  platform: z.nativeEnum(DevicePlatform, {
+    errorMap: () => ({ message: 'Plataforma inválida' })
+  }),
+  deviceId: z.string().min(1, 'ID de dispositivo requerido'),
+  deviceName: z.string()
+    .min(1, 'Nombre de dispositivo requerido')
+    .max(100, 'Nombre no puede exceder 100 caracteres'),
+  appVersion: z.string()
+    .min(1, 'Versión de app requerida')
+    .max(20, 'Versión no puede exceder 20 caracteres'),
+  osVersion: z.string()
+    .min(1, 'Versión de OS requerida')
+    .max(20, 'Versión no puede exceder 20 caracteres'),
+    
+  // Configuración push
+  pushSettings: z.object({
+    soundEnabled: z.boolean().default(true),
+    vibrateEnabled: z.boolean().default(true),
+    badgeEnabled: z.boolean().default(true),
+    alertStyle: z.enum(['banner', 'alert', 'none']).default('banner')
+  }),
+  
+  // Metadatos
+  timezone: z.string()
+    .min(1, 'Zona horaria requerida')
+    .max(50, 'Zona horaria no puede exceder 50 caracteres'),
+  language: z.string()
+    .min(2, 'Idioma requerido')
+    .max(10, 'Idioma no puede exceder 10 caracteres')
+});
+
+// Validación de preferencias de notificación
+export const userNotificationPreferencesSchema = z.object({
+  userId: z.string().min(1, 'ID de usuario requerido'),
+  
+  // Configuración general
+  globalEnabled: z.boolean().default(true),
+  quietHoursEnabled: z.boolean().default(false),
+  quietHoursStart: z.string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM)')
+    .default('22:00'),
+  quietHoursEnd: z.string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido (HH:MM)')
+    .default('08:00'),
+  timezone: z.string()
+    .min(1, 'Zona horaria requerida')
+    .max(50, 'Zona horaria no puede exceder 50 caracteres'),
+    
+  // Preferencias por tipo (se pueden personalizar individualmente)
+  typePreferences: z.record(
+    z.nativeEnum(NotificationType),
+    z.object({
+      enabled: z.boolean().default(true),
+      channels: z.array(z.nativeEnum(NotificationChannel))
+        .min(1, 'Al menos un canal requerido'),
+      priority: z.nativeEnum(NotificationPriority).default(NotificationPriority.NORMAL),
+      frequency: z.enum(['immediate', 'hourly', 'daily', 'weekly']).default('immediate'),
+      soundEnabled: z.boolean().default(true)
+    })
+  ).optional(),
+  
+  // Preferencias por canal
+  channelPreferences: z.record(
+    z.nativeEnum(NotificationChannel),
+    z.object({
+      enabled: z.boolean().default(true),
+      maxDailyLimit: z.number()
+        .min(1, 'Límite diario debe ser positivo')
+        .max(1000, 'Límite diario muy alto')
+        .optional(),
+      minIntervalMinutes: z.number()
+        .min(1, 'Intervalo mínimo debe ser positivo')
+        .max(1440, 'Intervalo no puede exceder 24 horas')
+        .optional()
+    })
+  ).optional(),
+  
+  // Filtros avanzados
+  filters: z.object({
+    mutedUsers: z.array(z.string()).default([]),
+    mutedProperties: z.array(z.string()).default([]),
+    mutedKeywords: z.array(z.string()).default([]),
+    priorityThreshold: z.nativeEnum(NotificationPriority).default(NotificationPriority.LOW)
+  }).optional()
+});
+
+// Validación de template de notificación
+export const notificationTemplateSchema = z.object({
+  type: z.nativeEnum(NotificationType, {
+    errorMap: () => ({ message: 'Tipo de notificación inválido' })
+  }),
+  name: z.string()
+    .min(1, 'Nombre requerido')
+    .max(100, 'Nombre no puede exceder 100 caracteres'),
+  description: z.string()
+    .max(500, 'Descripción no puede exceder 500 caracteres')
+    .optional(),
+    
+  // Templates por idioma
+  templates: z.record(
+    z.string().min(2, 'Código de idioma inválido'),
+    z.object({
+      title: z.string()
+        .min(1, 'Título requerido')
+        .max(100, 'Título no puede exceder 100 caracteres'),
+      message: z.string()
+        .min(1, 'Mensaje requerido')
+        .max(500, 'Mensaje no puede exceder 500 caracteres'),
+      emailSubject: z.string()
+        .max(200, 'Asunto no puede exceder 200 caracteres')
+        .optional(),
+      emailBody: z.string()
+        .max(5000, 'Cuerpo de email no puede exceder 5000 caracteres')
+        .optional(),
+      smsText: z.string()
+        .max(160, 'SMS no puede exceder 160 caracteres')
+        .optional()
+    })
+  ),
+  
+  // Configuración
+  defaultChannel: z.nativeEnum(NotificationChannel),
+  defaultPriority: z.nativeEnum(NotificationPriority).default(NotificationPriority.NORMAL),
+  expirationHours: z.number()
+    .min(1, 'Expiración debe ser positiva')
+    .max(8760, 'Expiración no puede exceder un año')
+    .optional(),
+  maxRetries: z.number()
+    .min(0, 'Reintentos no puede ser negativo')
+    .max(10, 'Máximo 10 reintentos')
+    .default(3),
+    
+  // Variables disponibles
+  variables: z.array(z.object({
+    name: z.string()
+      .min(1, 'Nombre de variable requerido')
+      .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, 'Nombre de variable inválido'),
+    type: z.enum(['string', 'number', 'date', 'boolean']),
+    required: z.boolean().default(false),
+    description: z.string()
+      .min(1, 'Descripción requerida')
+      .max(200, 'Descripción no puede exceder 200 caracteres')
+  })).default([]),
+  
+  isActive: z.boolean().default(true)
+});
+
+// Validación de configuración del sistema de notificaciones
+export const notificationSystemConfigSchema = z.object({
+  // Configuración de proveedores
+  providers: z.object({
+    push: z.object({
+      firebase: z.object({
+        enabled: z.boolean().default(false),
+        serverKey: z.string().min(1, 'Server key requerido').optional(),
+        senderId: z.string().min(1, 'Sender ID requerido').optional()
+      }),
+      apns: z.object({
+        enabled: z.boolean().default(false),
+        keyId: z.string().min(1, 'Key ID requerido').optional(),
+        teamId: z.string().min(1, 'Team ID requerido').optional(),
+        bundleId: z.string().min(1, 'Bundle ID requerido').optional(),
+        certPath: z.string().min(1, 'Ruta de certificado requerida').optional()
+      })
+    }),
+    
+    email: z.object({
+      smtp: z.object({
+        enabled: z.boolean().default(false),
+        host: z.string().min(1, 'Host SMTP requerido').optional(),
+        port: z.number().min(1, 'Puerto SMTP requerido').max(65535, 'Puerto inválido').optional(),
+        secure: z.boolean().default(true),
+        user: z.string().email('Email inválido').optional(),
+        password: z.string().min(1, 'Contraseña requerida').optional()
+      }),
+      sendgrid: z.object({
+        enabled: z.boolean().default(false),
+        apiKey: z.string().min(1, 'API Key requerida').optional()
+      })
+    }),
+    
+    sms: z.object({
+      twilio: z.object({
+        enabled: z.boolean().default(false),
+        accountSid: z.string().min(1, 'Account SID requerido').optional(),
+        authToken: z.string().min(1, 'Auth Token requerido').optional(),
+        fromNumber: z.string().min(1, 'Número de origen requerido').optional()
+      })
+    }),
+    
+    whatsapp: z.object({
+      twilio: z.object({
+        enabled: z.boolean().default(false),
+        accountSid: z.string().min(1, 'Account SID requerido').optional(),
+        authToken: z.string().min(1, 'Auth Token requerido').optional(),
+        fromNumber: z.string().min(1, 'Número de origen requerido').optional()
+      })
+    })
+  }),
+  
+  // Límites y configuración
+  rateLimits: z.object({
+    perUser: z.object({
+      hourly: z.number().min(1, 'Límite por hora debe ser positivo').default(100),
+      daily: z.number().min(1, 'Límite diario debe ser positivo').default(1000),
+      monthly: z.number().min(1, 'Límite mensual debe ser positivo').default(10000)
+    }),
+    global: z.object({
+      perSecond: z.number().min(1, 'Límite por segundo debe ser positivo').default(100),
+      perMinute: z.number().min(1, 'Límite por minuto debe ser positivo').default(1000),
+      perHour: z.number().min(1, 'Límite por hora debe ser positivo').default(10000)
+    })
+  }),
+  
+  // Configuración de retry
+  retryConfig: z.object({
+    maxRetries: z.number().min(0, 'Reintentos no puede ser negativo').max(10, 'Máximo 10 reintentos').default(3),
+    initialDelay: z.number().min(100, 'Delay inicial mínimo 100ms').default(1000),
+    backoffMultiplier: z.number().min(1, 'Multiplicador debe ser >= 1').default(2),
+    maxDelay: z.number().min(1000, 'Delay máximo mínimo 1 segundo').default(60000)
+  }),
+  
+  // Configuración de cleanup
+  cleanupConfig: z.object({
+    deleteReadAfterDays: z.number().min(1, 'Días para eliminar leídas debe ser positivo').default(30),
+    deleteUnreadAfterDays: z.number().min(1, 'Días para eliminar no leídas debe ser positivo').default(90),
+    deleteFailedAfterDays: z.number().min(1, 'Días para eliminar fallidas debe ser positivo').default(7),
+    archiveAfterDays: z.number().min(1, 'Días para archivar debe ser positivo').default(365)
+  }),
+  
+  // Configuración de features
+  features: z.object({
+    batchingEnabled: z.boolean().default(true),
+    schedulingEnabled: z.boolean().default(true),
+    templatingEnabled: z.boolean().default(true),
+    analyticsEnabled: z.boolean().default(true),
+    a11yEnabled: z.boolean().default(true)
+  })
+});
+
+// Tipos inferidos para notificaciones
+export type NotificationInput = z.infer<typeof notificationSchema>;
+export type PushNotificationInput = z.infer<typeof pushNotificationSchema>;
+export type UserDeviceInput = z.infer<typeof userDeviceSchema>;
+export type UserNotificationPreferencesInput = z.infer<typeof userNotificationPreferencesSchema>;
+export type NotificationTemplateInput = z.infer<typeof notificationTemplateSchema>;
+export type NotificationSystemConfigInput = z.infer<typeof notificationSystemConfigSchema>;
 
 export default rentalSchemas;
