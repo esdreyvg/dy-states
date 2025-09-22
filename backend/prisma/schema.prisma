@@ -1,0 +1,262 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  avatar        String?
+  role          UserRole  @default(CLIENT)
+  status        UserStatus @default(ACTIVE)
+  emailVerified Boolean   @default(false)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  refreshTokens RefreshToken[]
+  properties    Property[]     @relation("PropertyOwner")
+  agentProperties Property[]   @relation("PropertyAgent")
+  transactions  Transaction[]
+  notifications Notification[]
+  reviews       Review[]
+  favorites     PropertyFavorite[]
+
+  @@map("users")
+}
+
+// Refresh Token model
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// Property model
+model Property {
+  id            String         @id @default(cuid())
+  title         String
+  description   String
+  address       String
+  city          String
+  state         String
+  zipCode       String
+  country       String         @default("Dominican Republic")
+  latitude      Float?
+  longitude     Float?
+  price         Decimal
+  currency      String         @default("DOP")
+  bedrooms      Int?
+  bathrooms     Int?
+  area          Float?
+  lotSize       Float?
+  yearBuilt     Int?
+  propertyType  PropertyType
+  status        PropertyStatus @default(ACTIVE)
+  isActive      Boolean        @default(true)
+  isFeatured    Boolean        @default(false)
+  views         Int            @default(0)
+  
+  // Relations
+  ownerId       String
+  agentId       String?
+  owner         User           @relation("PropertyOwner", fields: [ownerId], references: [id])
+  agent         User?          @relation("PropertyAgent", fields: [agentId], references: [id])
+  
+  images        PropertyImage[]
+  features      PropertyFeature[]
+  transactions  Transaction[]
+  favorites     PropertyFavorite[]
+  reviews       Review[]
+  
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("properties")
+}
+
+// Property Image model
+model PropertyImage {
+  id         String   @id @default(cuid())
+  url        String
+  caption    String?
+  isPrimary  Boolean  @default(false)
+  order      Int      @default(0)
+  propertyId String
+  
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime @default(now())
+
+  @@map("property_images")
+}
+
+// Property Feature model
+model PropertyFeature {
+  id         String   @id @default(cuid())
+  name       String
+  value      String?
+  propertyId String
+  
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_features")
+}
+
+// Property Favorite model
+model PropertyFavorite {
+  id         String   @id @default(cuid())
+  userId     String
+  propertyId String
+  
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, propertyId])
+  @@map("property_favorites")
+}
+
+// Transaction model
+model Transaction {
+  id             String          @id @default(cuid())
+  type           TransactionType
+  amount         Decimal
+  currency       String          @default("DOP")
+  status         TransactionStatus @default(PENDING)
+  description    String?
+  commission     Decimal?
+  closingDate    DateTime?
+  
+  // Relations
+  propertyId     String
+  clientId       String
+  property       Property        @relation(fields: [propertyId], references: [id])
+  client         User            @relation(fields: [clientId], references: [id])
+  
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@map("transactions")
+}
+
+// Review model
+model Review {
+  id         String      @id @default(cuid())
+  rating     Int         @db.SmallInt
+  comment    String?
+  status     ReviewStatus @default(PENDING)
+  
+  // Relations
+  propertyId String
+  userId     String
+  property   Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([propertyId, userId])
+  @@map("reviews")
+}
+
+// Notification model
+model Notification {
+  id        String            @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  read      Boolean           @default(false)
+  
+  // Relations
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime          @default(now())
+
+  @@map("notifications")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  AGENT
+  CLIENT
+  OWNER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PropertyType {
+  HOUSE
+  APARTMENT
+  CONDO
+  TOWNHOUSE
+  VILLA
+  LAND
+  COMMERCIAL
+  OFFICE
+  WAREHOUSE
+}
+
+enum PropertyStatus {
+  ACTIVE
+  INACTIVE
+  SOLD
+  RENTED
+  PENDING
+  DRAFT
+}
+
+enum TransactionType {
+  SALE
+  RENT
+  LEASE
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  PROPERTY_INQUIRY
+  TRANSACTION_UPDATE
+  REVIEW_SUBMITTED
+  SYSTEM_ALERT
+  MARKETING_UPDATE
+}
