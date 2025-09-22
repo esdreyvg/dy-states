@@ -25,7 +25,7 @@ export interface RegisterData {
   password: string;
   firstName: string;
   lastName: string;
-  phone?: string;
+  phone?: string | undefined;
 }
 
 export interface AuthResponse {

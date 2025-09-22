@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
 import App from '@/app';
+import { describe, it, beforeEach } from 'node:test';
 
 const app = new App().app;
 const prisma = new PrismaClient();
@@ -221,3 +222,7 @@ describe('Authentication Endpoints', () => {
     });
   });
 });
+
+function expect(body: any) {
+    throw new Error('Function not implemented.');
+}

@@ -6,7 +6,7 @@ export interface CreateUserData {
   password: string;
   firstName: string;
   lastName: string;
-  phone?: string;
+  phone?: string | undefined;
   role?: UserRole;
 }
 
